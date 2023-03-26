@@ -74,12 +74,9 @@ func main() {
 		} else if strings.Contains(keyword, "img") {
 			continue
 		} else {
-			msg := convertText(abridgedPost)
-			msg += "\n\nUgandan baboon"
-			callback(msg)
+			time.Sleep(5 * time.Minute)
 		}
 		temp = hp.HighestPost + 1
-		time.Sleep(300 * time.Minute)
 	}
 }
 
