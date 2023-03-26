@@ -69,7 +69,7 @@ func main() {
 			msg := convertText("two world wars")
 			callback(msg)
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
-			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account"
+			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:"
 			callback(msg)
 		} else if strings.Contains(keyword, "img") {
 			continue
