@@ -44,7 +44,7 @@ func main() {
 	for {
 		hp := getHighestPost()
 		if hp.HighestPost == temp {
-			fmt.Println("No new posts...")
+			log.Println("No new posts...")
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -71,30 +71,33 @@ func main() {
 			log.Println("Responding to weeb")
 			msg := "Weebs are trash"
 			callback(msg)
+			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "terminator") {
 			log.Println("Responding to terminator")
 			msg := convertText(abridgedPost)
 			callback(msg)
+			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "inna woods") {
 			log.Println("Responding to inna woods")
 			msg := convertText(abridgedPost)
 			callback(msg)
+			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "1911") {
 			log.Println("Responding to 1911")
 			msg := convertText("two world wars")
 			callback(msg)
+			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
 			log.Println("Responding to shill/profit")
 			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:"
 			callback(msg)
+			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "img") {
 			log.Println("Image detected...")
 			continue
 		} else {
-			log.Println("Sleeping for five seconds, no keyword...")
 			time.Sleep(5 * time.Second)
 		}
-		temp = hp.HighestPost + 1
 	}
 }
 
