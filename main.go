@@ -71,6 +71,8 @@ func main() {
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
 			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account"
 			callback(msg)
+		} else if strings.Contains(keyword, "img") {
+			continue
 		} else {
 			msg := convertText(abridgedPost)
 			msg += "\n\nUgandan baboon"
