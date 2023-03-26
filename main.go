@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -31,10 +33,19 @@ const apiUser = "terminator"
 func main() {
 	temp := 0
 
+	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	log.SetOutput(file)
+
 	for {
 		hp := getHighestPost()
 		if hp.HighestPost == temp {
-			time.Sleep(5 * time.Minute)
+			fmt.Println("No new posts...")
+			time.Sleep(5 * time.Second)
 			continue
 		}
 		if hp == (postCount{}) {
@@ -57,24 +68,31 @@ func main() {
 		abridgedPost := lp[:x]
 
 		if strings.Contains(keyword, "weeb") {
+			log.Println("Responding to weeb")
 			msg := "Weebs are trash"
 			callback(msg)
 		} else if strings.Contains(keyword, "terminator") {
+			log.Println("Responding to terminator")
 			msg := convertText(abridgedPost)
 			callback(msg)
 		} else if strings.Contains(keyword, "inna woods") {
+			log.Println("Responding to inna woods")
 			msg := convertText(abridgedPost)
 			callback(msg)
 		} else if strings.Contains(keyword, "1911") {
+			log.Println("Responding to 1911")
 			msg := convertText("two world wars")
 			callback(msg)
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
+			log.Println("Responding to shill/profit")
 			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:"
 			callback(msg)
 		} else if strings.Contains(keyword, "img") {
+			log.Println("Image detected...")
 			continue
 		} else {
-			time.Sleep(5 * time.Minute)
+			log.Println("Sleeping for five seconds, no keyword...")
+			time.Sleep(5 * time.Second)
 		}
 		temp = hp.HighestPost + 1
 	}
