@@ -32,8 +32,6 @@ const apiUser = "terminator"
 
 func main() {
 
-	fmt.Println(getRandomBibleVerse())
-	os.Exit(0)
 	temp := 0
 
 	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
