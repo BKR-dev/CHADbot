@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -70,6 +71,8 @@ func main() {
 		if strings.Contains(keyword, "weeb") {
 			log.Println("Responding to weeb")
 			msg := "Weebs are trash"
+			// adding an insult to the message
+			msg = add_insult(msg)
 			callback(msg)
 			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "terminator") {
@@ -227,4 +230,19 @@ func callback(message string) {
 		fmt.Println(err)
 		return
 	}
+}
+
+func add_insult(message string) string {
+	// setup slice of insults
+	insult := []string{"listen up retard ", " piece of fuck", " you absolute muppet", " you hopeless degenerate"}
+	// getting random int 0-3
+	rndm := rand.Intn((4 - 1) + 1)
+	// adding the insults to the message
+	if rndm < 1 {
+		message = insult[rndm] + message
+	} else {
+		message = message + insult[rndm]
+	}
+
+	return message
 }
