@@ -80,7 +80,7 @@ func main() {
 			msg := convertText(abridgedPost)
 			callback(msg)
 			temp = hp.HighestPost + 1
-		} else if strings.Contains(keyword, "inna woods") {
+		} else if strings.Contains(keyword, "inna woods") || strings.Contains(keyword, "innawoods") {
 			log.Println("Responding to inna woods")
 			msg := convertText(abridgedPost)
 			callback(msg)
@@ -93,6 +93,18 @@ func main() {
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
 			log.Println("Responding to shill/profit")
 			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:"
+			callback(msg)
+			temp = hp.HighestPost + 1
+			// new keyword "vegan" and "keto"
+		} else if strings.Contains(keyword, "vegan") || strings.Contains(keyword, "keto") {
+			log.Println("Responding to vegan/keto")
+			msg := "just eat some real food and stop being a douche"
+			callback(msg)
+			temp = hp.HighestPost + 1
+			// new keyword "linux"
+		} else if strings.Contains(keyword, "linux") {
+			log.Println("Responding to linux")
+			msg := "stop being such a poor and use a real OS"
 			callback(msg)
 			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "img") {
