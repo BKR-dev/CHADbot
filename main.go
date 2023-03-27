@@ -27,7 +27,7 @@ type latestPost struct {
 	} `json:"post_stream"`
 }
 
-const thread = "1016"
+const thread = "1113"
 const apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43"
 const apiUser = "terminator"
 
@@ -62,12 +62,6 @@ func main() {
 		}
 
 		keyword := strings.ToLower(lp)
-		x := len(keyword)
-		if strings.Contains(lp, "\n") {
-			x = strings.Index(lp, "\n")
-		}
-
-		abridgedPost := lp[:x]
 
 		if strings.Contains(keyword, "weeb") {
 			log.Println("Responding to weeb")
@@ -76,14 +70,9 @@ func main() {
 			msg = add_insult(msg)
 			callback(msg)
 			temp = hp.HighestPost + 1
-		} else if strings.Contains(keyword, "terminator") {
-			log.Println("Responding to terminator")
-			msg := convertText(abridgedPost)
-			callback(msg)
-			temp = hp.HighestPost + 1
-		} else if strings.Contains(keyword, "inna woods") || strings.Contains(keyword, "innawoods") {
+		} else if strings.Contains(keyword, "inna woods") {
 			log.Println("Responding to inna woods")
-			msg := convertText(abridgedPost)
+			msg := convertText("forever alone in the woods")
 			callback(msg)
 			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "1911") {
