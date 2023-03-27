@@ -93,7 +93,7 @@ func main() {
 			// new keyword "vegan" and "keto"
 		} else if strings.Contains(keyword, "vegan") || strings.Contains(keyword, "keto") {
 			log.Println("Responding to vegan/keto")
-			msg := "just eat some real food and stop being a douche"
+			msg := "just eat some real food and stop being a cunt"
 			callback(msg)
 			temp = hp.HighestPost + 1
 			// new keyword "linux"
@@ -102,9 +102,11 @@ func main() {
 			msg := "stop being such a poor and use a real OS"
 			callback(msg)
 			temp = hp.HighestPost + 1
-		} else if strings.Contains(keyword, "img") {
-			log.Println("Image detected...")
-			continue
+		} else if strings.Contains(keyword, "the fed") {
+			log.Println("Responding to the fed")
+			msg := "We've had enough, time to blow this fucker up"
+			callback(msg)
+			temp = hp.HighestPost + 1
 		} else {
 			time.Sleep(5 * time.Second)
 		}
@@ -260,7 +262,7 @@ func callback(message string) {
 
 func add_insult(message string) string {
 	// setup slice of insults
-	insult := []string{"listen up retard ", " piece of fuck", " you absolute muppet", " you hopeless degenerate"}
+	insult := []string{"Listen up retard ", " piece of fuck", " you absolute muppet", " you hopeless degenerate"}
 	// getting random int 0-3
 	rndm := rand.Intn((4 - 1) + 1)
 	// adding the insults to the message
