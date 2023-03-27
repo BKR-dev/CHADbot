@@ -31,6 +31,9 @@ const apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43
 const apiUser = "terminator"
 
 func main() {
+
+	fmt.Println(getRandomBibleVerse())
+	os.Exit(0)
 	temp := 0
 
 	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
@@ -108,7 +111,6 @@ func main() {
 }
 
 func getRandomBibleVerse() string {
-	var bibleVerse string
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest("GET", "https://labs.bible.org/api/?passage=random", nil)
 	if err != nil {
@@ -122,13 +124,9 @@ func getRandomBibleVerse() string {
 	if err != nil {
 		log.Println(err)
 	}
-	err = json.Unmarshal(body, &bibleVerse)
-	if err != nil {
-		log.Println(err)
-	}
 	res.Body.Close()
 
-	return bibleVerse
+	return string(body)
 }
 
 func getHighestPost() postCount {
