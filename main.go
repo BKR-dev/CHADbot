@@ -80,8 +80,7 @@ func main() {
 			msg := convertText("two world wars")
 			callback(msg)
 			temp = hp.HighestPost + 1
-		} else if (strings.Contains(keyword, "bible") && strings.Contains(keyword, "verse")) ||
-			strings.Contains(keyword, "give") || strings.Contains(keyword, "get") || strings.Contains(keyword, "recite") {
+		} else if strings.Contains(keyword, "bible") && strings.Contains(keyword, "verse") {
 			log.Println("Responding to bible/verse")
 			msg := getRandomBibleVerse()
 			callback(msg)
