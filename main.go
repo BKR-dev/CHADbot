@@ -32,6 +32,7 @@ const apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43
 const apiUser = "terminator"
 
 func main() {
+
 	temp := 0
 
 	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
@@ -90,6 +91,12 @@ func main() {
 			msg := convertText("two world wars")
 			callback(msg)
 			temp = hp.HighestPost + 1
+		} else if (strings.Contains(keyword, "bible") && strings.Contains(keyword, "verse")) ||
+			strings.Contains(keyword, "give") || strings.Contains(keyword, "get") || strings.Contains(keyword, "recite") {
+			log.Println("Responding to bible/verse")
+			msg := getRandomBibleVerse()
+			callback(msg)
+			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
 			log.Println("Responding to shill/profit")
 			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:"
@@ -114,6 +121,25 @@ func main() {
 			time.Sleep(5 * time.Second)
 		}
 	}
+}
+
+func getRandomBibleVerse() string {
+	client := http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest("GET", "https://labs.bible.org/api/?passage=random", nil)
+	if err != nil {
+		log.Println(err)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println(err)
+	}
+	res.Body.Close()
+
+	return string(body)
 }
 
 func getHighestPost() postCount {
