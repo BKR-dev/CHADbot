@@ -95,7 +95,7 @@ func main() {
 			// new keyword "vegan" and "keto"
 		} else if strings.Contains(keyword, "vegan") || strings.Contains(keyword, "keto") {
 			log.Println("Responding to vegan/keto")
-			msg := "just eat some real food and stop being a fag"
+			msg := "just eat some real food and stop being a douche"
 			callback(msg)
 			temp = hp.HighestPost + 1
 			// new keyword "linux"
