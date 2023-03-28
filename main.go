@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -32,9 +31,6 @@ const apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43
 const apiUser = "terminator"
 
 func main() {
-
-	temp := 0
-
 	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
 	if err != nil {
 		fmt.Println(err)
@@ -45,70 +41,68 @@ func main() {
 
 	for {
 		hp := getHighestPost()
-		if hp.HighestPost == temp {
-			log.Println("No new posts...")
-			time.Sleep(5 * time.Second)
+
+		if hp == (postCount{}) || hp.HighestPost == 0 {
+			log.Println("Empty, sleeping it off...")
+			time.Sleep(2 * time.Minute)
 			continue
 		}
-		if hp == (postCount{}) {
-			fmt.Println("See error: empty result")
+
+		lp := getLatestPost(hp.HighestPost)
+		if err != nil {
+			fmt.Println(err)
 			return
 		}
 
-		lp := getLatestPost(hp)
 		if lp == "none" {
-			fmt.Println("See error: empty result")
-			return
+			log.Println("latestPost: empty result")
+			time.Sleep(5 * time.Second)
+			continue
 		}
 
 		keyword := strings.ToLower(lp)
 
 		if strings.Contains(keyword, "weeb") {
 			log.Println("Responding to weeb")
-			msg := "Weebs are trash"
+			msg := "Anime is trash"
 			// adding an insult to the message
-			msg = add_insult(msg)
 			callback(msg)
-			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "inna woods") {
 			log.Println("Responding to inna woods")
 			msg := convertText("forever alone in the woods")
 			callback(msg)
-			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "1911") {
 			log.Println("Responding to 1911")
 			msg := convertText("two world wars")
 			callback(msg)
-			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "bible") && strings.Contains(keyword, "verse") {
 			log.Println("Responding to bible/verse")
 			msg := getRandomBibleVerse()
 			callback(msg)
-			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "shill") || strings.Contains(keyword, "profit") {
 			log.Println("Responding to shill/profit")
 			msg := "Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:"
 			callback(msg)
-			temp = hp.HighestPost + 1
 			// new keyword "vegan" and "keto"
 		} else if strings.Contains(keyword, "vegan") || strings.Contains(keyword, "keto") {
 			log.Println("Responding to vegan/keto")
 			msg := "just eat some real food and stop being a cunt"
 			callback(msg)
-			temp = hp.HighestPost + 1
 			// new keyword "linux"
 		} else if strings.Contains(keyword, "linux") {
 			log.Println("Responding to linux")
 			msg := "stop being such a poor and use a real OS"
 			callback(msg)
-			temp = hp.HighestPost + 1
 		} else if strings.Contains(keyword, "the fed") {
 			log.Println("Responding to the fed")
 			msg := "We've had enough, time to blow this fucker up"
 			callback(msg)
-			temp = hp.HighestPost + 1
+		} else if strings.Contains(keyword, "vision") {
+			log.Println("Responding to vision")
+			msg := "Fatwood is a cunt"
+			callback(msg)
 		} else {
-			time.Sleep(5 * time.Second)
+			time.Sleep(3 * time.Second)
 		}
 	}
 }
@@ -127,7 +121,7 @@ func getRandomBibleVerse() string {
 	if err != nil {
 		log.Println(err)
 	}
-	res.Body.Close()
+	defer res.Body.Close()
 
 	return string(body)
 }
@@ -136,9 +130,10 @@ func getHighestPost() postCount {
 	url := "https://forum.pixelspace.xyz/t/" + thread + ".json"
 	var result postCount
 
-	client := http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		log.Println("Failed new request")
 		fmt.Println(err)
 		return result
 	}
@@ -149,20 +144,20 @@ func getHighestPost() postCount {
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed client request")
 		return result
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed res body")
 		return result
 	}
 
 	err = json.Unmarshal(body, &result)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed unmarshal")
 		return result
 	}
 
@@ -171,13 +166,13 @@ func getHighestPost() postCount {
 	return result
 }
 
-func getLatestPost(pc postCount) string {
-	url := "https://forum.pixelspace.xyz/t/" + thread + "/" + strconv.Itoa(pc.HighestPost) + ".json"
-	client := http.Client{Timeout: 30 * time.Second}
+func getLatestPost(highestPost int) string {
+	url := "https://forum.pixelspace.xyz/t/" + thread + "/" + strconv.Itoa(highestPost) + ".json"
+	client := &http.Client{Timeout: 30 * time.Second}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed new request")
 		return "none"
 	}
 
@@ -187,14 +182,13 @@ func getLatestPost(pc postCount) string {
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed client request")
 		return "none"
 	}
-	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed response")
 		return "none"
 	}
 
@@ -202,11 +196,17 @@ func getLatestPost(pc postCount) string {
 	err = json.Unmarshal(body, &latest)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Failed unmarshal")
+		return "none"
+	}
+
+	if len(latest.PostStream.Posts) == 0 {
+		log.Println("PostStream.Posts is empty")
 		return "none"
 	}
 
 	currentPost := latest.PostStream.Posts[len(latest.PostStream.Posts)-1].Cooked
+	res.Body.Close()
 	return currentPost
 }
 
@@ -245,6 +245,7 @@ func callback(message string) {
 	url := fmt.Sprintf("https://forum.pixelspace.xyz/posts.json")
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
+		log.Println("Error with new request")
 		fmt.Println(err)
 	}
 
@@ -255,22 +256,7 @@ func callback(message string) {
 	client := http.Client{Timeout: 30 * time.Second}
 	_, err = client.Do(req)
 	if err != nil {
+		log.Println("Error with client")
 		fmt.Println(err)
-		return
 	}
-}
-
-func add_insult(message string) string {
-	// setup slice of insults
-	insult := []string{"Listen up retard ", " piece of fuck", " you absolute muppet", " you hopeless degenerate"}
-	// getting random int 0-3
-	rndm := rand.Intn((4 - 1) + 1)
-	// adding the insults to the message
-	if rndm < 1 {
-		message = insult[rndm] + message
-	} else {
-		message = message + insult[rndm]
-	}
-
-	return message
 }
