@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -34,7 +36,8 @@ const apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43
 const apiUser = "terminator"
 
 func main() {
-	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0755)
+	// open file to log to
+	file, err := os.OpenFile("shitpost.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -44,6 +47,15 @@ func main() {
 	now := time.Now()
 	now.Format("2006-01-02 15:04:05")
 	log.Print("\n\n\n\nStarting up at %v", now)
+
+	defer file.Close()
+
+	// Set the log output to both the log file and stdout
+	mw := io.MultiWriter(os.Stdout, file)
+	log.SetOutput(mw)
+
+	// Set the log format
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	for {
 		hp := getHighestPost()
@@ -65,12 +77,15 @@ func main() {
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		// TODO: FIX html tags
+    
 		cleanPost := extractTextFromHTML(lp)
 		userPost := strings.Split(cleanPost, " ")
 		now = time.Now()
 		log.Printf("UserPost: %v\n", userPost)
-		botResponse := getRandomResponse(userPost)
+		botResponse, err := getRandomResponse(userPost)
+		if err != nil {
+			LogError(err, "Could not get response")
+		}
 		log.Printf("response from Bot: %v\n", botResponse)
 		callback(botResponse)
 		time.Sleep(10 * time.Second)
@@ -78,23 +93,23 @@ func main() {
 	}
 }
 
-func getRandomBibleVerse() string {
+func getRandomBibleVerse() (string, error) {
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest("GET", "https://labs.bible.org/api/?passage=random", nil)
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println(err)
+		return "", err
 	}
 	defer res.Body.Close()
 
-	return string(body)
+	return string(body), nil
 }
 
 func getHighestPost() postCount {
@@ -232,8 +247,9 @@ func callback(message string) {
 	}
 }
 
-func getRandomResponse(keyword []string) string {
-	log.Println("starting to find a response")
+func getRandomResponse(keyword []string) (string, error) {
+	var err error
+	LogMessage("Getting response")
 	// all trigger for a response
 	trigger := []string{"weeb", "anime", "glock", "1911", "bible", "shill", "crypto", "bitcoin",
 		"etherium", "vegan", "keto", "linux", "macos", "windows", "fed", "fbi", "cia", "atf",
@@ -302,13 +318,12 @@ func getRandomResponse(keyword []string) string {
 	// match trigger and keyword
 findMatch:
 	for _, trig := range trigger {
-		log.Println("trigger: " + trig)
 		for _, key := range keyword {
-			log.Println("key: " + key)
 			if trig == strings.ToLower(key) {
 				match = trig
-				log.Println("FOUND A MATCH!!!!")
 				break findMatch
+			} else if strings.ToLower(key) == "bible" {
+				match = "bible"
 			}
 		}
 	}
@@ -318,14 +333,19 @@ findResponse:
 	for _, strc := range allResponses {
 		for _, key := range strc.keywords {
 			if key == match {
-				log.Println(snarckyResponse)
 				snarckyResponse = returnResponseFromSlice(strc.responses)
+				break findResponse
+			} else if match == "bible" {
+				snarckyResponse, err = getRandomBibleVerse()
+				if err != nil {
+					return "", err
+				}
 				break findResponse
 			}
 		}
 	}
 
-	return snarckyResponse
+	return snarckyResponse, nil
 }
 
 func returnResponseFromSlice(responses []string) string {
@@ -349,4 +369,39 @@ func extractTextFromHTML(htmlString string) string {
 	}
 	f(doc)
 	return text
+}
+
+
+func LogError(err error, message string) {
+	// Get the current function name
+	funcName := getFunctionName()
+
+	// Log the error with the function name, time, and message
+	log.Printf("[%s] %s: %s - %s", time.Now().Format("2006-01-02 15:04:05.000"), funcName, err.Error(), message)
+}
+
+func LogMessage(message string) {
+	// Get the current function name
+	funcName := getFunctionName()
+
+	// Log the error with the function name, time, and message
+	log.Printf("[%s] %s: %s - %s", time.Now().Format("2006-01-02 15:04:05.000"), funcName, message)
+}
+
+func getFunctionName() string {
+	// Get the function name from the runtime call stack
+	pc, _, _, ok := runtime.Caller(2)
+	if !ok {
+		return "unknown"
+	}
+	fn := runtime.FuncForPC(pc)
+	if fn == nil {
+		return "unknown"
+	}
+	name := fn.Name()
+	idx := strings.LastIndex(name, ".")
+	if idx >= 0 {
+		name = name[idx+1:]
+	}
+	return name
 }
