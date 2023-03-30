@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 type postCount struct {
@@ -64,7 +66,8 @@ func main() {
 			continue
 		}
 		// TODO: FIX html tags
-		userPost := strings.Split(lp, " ")
+		cleanPost := extractTextFromHTML(lp)
+		userPost := strings.Split(cleanPost, " ")
 		now = time.Now()
 		log.Printf("UserPost: %v\n", userPost)
 		botResponse := getRandomResponse(userPost)
@@ -327,4 +330,23 @@ findResponse:
 
 func returnResponseFromSlice(responses []string) string {
 	return responses[rand.Intn((len(responses)-1)+1)]
+}
+
+func extractTextFromHTML(htmlString string) string {
+	doc, err := html.Parse(strings.NewReader(htmlString))
+	if err != nil {
+		return "ERROR"
+	}
+	var f func(*html.Node)
+	var text string
+	f = func(n *html.Node) {
+		if n.Type == html.TextNode {
+			text += n.Data
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+	return text
 }
