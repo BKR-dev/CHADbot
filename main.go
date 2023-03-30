@@ -27,7 +27,7 @@ type latestPost struct {
 	} `json:"post_stream"`
 }
 
-const thread = "1113"
+const thread = "1118"
 const apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43"
 const apiUser = "terminator"
 
@@ -39,6 +39,9 @@ func main() {
 	}
 
 	log.SetOutput(file)
+	now := time.Now()
+	now.Format("2006-01-02 15:04:05")
+	log.Print("\n\n\n\nStarting up at %v", now)
 
 	for {
 		hp := getHighestPost()
@@ -60,11 +63,14 @@ func main() {
 			time.Sleep(5 * time.Second)
 			continue
 		}
-
+		// TODO: FIX html tags
 		userPost := strings.Split(lp, " ")
-
-		callback(getRandomResponse(userPost))
-		time.Sleep(3 * time.Second)
+		now = time.Now()
+		log.Printf("UserPost: %v\n", userPost)
+		botResponse := getRandomResponse(userPost)
+		log.Printf("response from Bot: %v\n", botResponse)
+		callback(botResponse)
+		time.Sleep(10 * time.Second)
 
 	}
 }
@@ -224,7 +230,7 @@ func callback(message string) {
 }
 
 func getRandomResponse(keyword []string) string {
-
+	log.Println("starting to find a response")
 	// all trigger for a response
 	trigger := []string{"weeb", "anime", "glock", "1911", "bible", "shill", "crypto", "bitcoin",
 		"etherium", "vegan", "keto", "linux", "macos", "windows", "fed", "fbi", "cia", "atf",
@@ -293,9 +299,12 @@ func getRandomResponse(keyword []string) string {
 	// match trigger and keyword
 findMatch:
 	for _, trig := range trigger {
+		log.Println("trigger: " + trig)
 		for _, key := range keyword {
+			log.Println("key: " + key)
 			if trig == strings.ToLower(key) {
 				match = trig
+				log.Println("FOUND A MATCH!!!!")
 				break findMatch
 			}
 		}
@@ -306,6 +315,7 @@ findResponse:
 	for _, strc := range allResponses {
 		for _, key := range strc.keywords {
 			if key == match {
+				log.Println(snarckyResponse)
 				snarckyResponse = returnResponseFromSlice(strc.responses)
 				break findResponse
 			}
