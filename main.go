@@ -77,7 +77,7 @@ func main() {
 			time.Sleep(5 * time.Second)
 			continue
 		}
-
+    
 		cleanPost := extractTextFromHTML(lp)
 		userPost := strings.Split(cleanPost, " ")
 		now = time.Now()
@@ -370,6 +370,7 @@ func extractTextFromHTML(htmlString string) string {
 	f(doc)
 	return text
 }
+
 
 func LogError(err error, message string) {
 	// Get the current function name
