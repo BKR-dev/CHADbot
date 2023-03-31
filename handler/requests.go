@@ -3,11 +3,11 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"terminator-shitpost/logging"
 	"time"
@@ -28,6 +28,8 @@ type latestPost struct {
 	} `json:"post_stream"`
 }
 
+var Scribe logging.Logger
+
 // target thread, apiKey and User
 var thread string
 var apiKey string
@@ -37,16 +39,21 @@ func init() {
 	thread = "1118"
 	apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43"
 	apiUser = "terminator"
+
+	var err error
+	Scribe, err = logging.NewLogger()
+	if err != nil {
+		fmt.Println("Error creating logger in responses.go")
+	}
 }
 
-func GetLastPost(logging.Logger) (string, error) {
-	logger := logging.NewLogger(logging.DebugLevel, os.Stdout)
+func GetLastPost() (string, error) {
 	var lastPost string
 	for {
 		hp := getHighestPost()
 
 		if hp == (postCount{}) || hp.HighestPost == 0 {
-			logger.Info("Empty, sleeping it off...")
+			Scribe.Infof("Empty, sleeping it off...")
 
 			time.Sleep(2 * time.Minute)
 			continue
@@ -65,7 +72,11 @@ func GetLastPost(logging.Logger) (string, error) {
 	}
 }
 
-func PostResponseToTopic(log logging.Logger, message string) error {
+func PostResponseToTopic(message string) error {
+
+	if message == "" {
+		return errors.New("Empty Message String")
+	}
 
 	jsonBody := []byte(`{"topic_id": "%s", "raw": "%s"}`)
 	s := fmt.Sprintf(string(jsonBody), thread, message)
@@ -74,7 +85,6 @@ func PostResponseToTopic(log logging.Logger, message string) error {
 	url := fmt.Sprintf("https://forum.pixelspace.xyz/posts.json")
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
-		log.Error(err.Error())
 		return err
 	}
 
@@ -83,9 +93,11 @@ func PostResponseToTopic(log logging.Logger, message string) error {
 	req.Header.Set("Api-Username", apiUser)
 
 	client := http.Client{Timeout: 30 * time.Second}
-	_, err = client.Do(req)
+	httpCode, err := client.Do(req)
+	if !(httpCode.StatusCode >= 200 && httpCode.StatusCode <= 204) {
+		return errors.New("httpStatusCode is worrysome: " + fmt.Sprint(httpCode.StatusCode))
+	}
 	if err != nil {
-		log.Error(err.Error())
 		return err
 	}
 	return nil
@@ -98,7 +110,7 @@ func getHighestPost() postCount {
 	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Println("Failed new request")
+		Scribe.Infof("Failed new request")
 		fmt.Println(err)
 		return result
 	}
@@ -109,7 +121,7 @@ func getHighestPost() postCount {
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Println("Failed client request")
+		Scribe.Infof("Failed client request")
 		return result
 	}
 

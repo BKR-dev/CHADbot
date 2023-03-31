@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
 	"terminator-shitpost/handler"
@@ -18,14 +19,31 @@ type TopicResponses struct {
 	responses []string
 }
 
-func GetResponse(log logging.Logger, post string) (string, error) {
-	cleanPost := extractTextFromHTML(post)
+var Scribe logging.Logger
 
+func init() {
+	var err error
+	Scribe, err = logging.NewLogger()
+	if err != nil {
+		fmt.Println("Error creating logger in responses.go")
+	}
+}
+
+func GetResponse(post string) (string, error) {
+
+	Scribe.Infof("Cleaning up Post: %v", post)
+	cleanPost := extractTextFromHTML(post)
 	keywords := strings.Split(cleanPost, " ")
+	Scribe.Infof("Looking for keywords: %v", keywords)
+
 	answer, err := getRandomResponse(keywords)
 	if err != nil {
-		log.Error(err.Error())
+		return "", nil
 	}
+	if answer == "" {
+		Scribe.Infof("Response is empty!? %v\t.... whats going on?", answer)
+	}
+	Scribe.Infof("Using response: %v", answer)
 	return answer, nil
 }
 
@@ -61,7 +79,8 @@ func getRandomResponse(keyword []string) (string, error) {
 	// all trigger for a response
 	trigger := []string{"weeb", "anime", "glock", "1911", "bible", "shill", "crypto", "bitcoin",
 		"etherium", "vegan", "keto", "linux", "macos", "windows", "fed", "fbi", "cia", "atf",
-		"aft", "vision", "(((", ")))", "propaganda", "1984", "innawoods", "inna woods", "gaming", "gayming"}
+		"aft", "vision", "(((", ")))", "propaganda", "1984", "innawoods", "inna woods", "gaming",
+		"gayming"}
 
 	var match string
 	var snarckyResponse string
@@ -90,7 +109,8 @@ func getRandomResponse(keyword []string) (string, error) {
 	shillCrypto := TopicResponses{
 		topic:    "shill",
 		keywords: []string{"shill", "crypto", "bitcoin", "etherium", "NFT"},
-		responses: []string{"Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:",
+		responses: []string{
+			"Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:",
 			"My NTF ETF i just shorted got me the platinum AMEX so i get paid for spending money i dont have :think_about_it:",
 			"bro invest in my hyper value adding NFT web4.2 finTech renewable ecommerce gaming startup, bro"},
 	}
@@ -156,7 +176,7 @@ func returnResponseFromSlice(responses []string) string {
 func extractTextFromHTML(htmlString string) string {
 	doc, err := html.Parse(strings.NewReader(htmlString))
 	if err != nil {
-		return "ERROR"
+		Scribe.Errorf("Error removing HTML: %v", err)
 	}
 	var f func(*html.Node)
 	var text string

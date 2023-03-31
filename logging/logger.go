@@ -5,115 +5,79 @@ import (
 	"io"
 	"log"
 	"os"
-	"runtime"
-	"strings"
 	"time"
 )
 
-type Logger interface {
-	Debug(message string)
-	Info(message string)
-	Warning(message string)
-	Error(message string)
-	Fatal(message string)
-	Format(message string, args ...interface{})
+type Logger struct {
+	out  io.Writer
+	file *os.File
+	log  *log.Logger
 }
 
-type logger struct {
-	level LogLevel
-	out   io.Writer
-}
-
-type LogLevel int
-
-const (
-	DebugLevel LogLevel = iota
-	InfoLevel
-	WarningLevel
-	ErrorLevel
-	FatalLevel
-)
-
-func NewLogger(level LogLevel, out io.Writer) Logger {
-	return &logger{level: level, out: out}
-}
-
-func (l *logger) Debug(message string) {
-	if l.level <= DebugLevel {
-		l.log("DEBUG", message)
-	}
-}
-
-func (l *logger) Info(message string) {
-	if l.level <= InfoLevel {
-		l.log("INFO", message)
-	}
-}
-
-func (l *logger) Warning(message string) {
-	if l.level <= WarningLevel {
-		l.log("WARNING", message)
-	}
-}
-
-func (l *logger) Error(message string) {
-	if l.level <= ErrorLevel {
-		pc, _, _, ok := runtime.Caller(1)
-		if !ok {
-
-		}
-		fn := runtime.FuncForPC(pc)
-		if fn == nil {
-
-		}
-		name := fn.Name()
-		idx := strings.LastIndex(name, ".")
-		if idx >= 0 {
-			name = name[idx+1:]
-		}
-		l.log("ERROR", message)
-	}
-}
-
-func (l *logger) Fatal(message string) {
-	l.log("FATAL", message)
-	os.Exit(1)
-}
-
-func (l *logger) Format(format string, args ...interface{}) {
-	message := fmt.Sprintf(format, args...)
-	l.log("FORMAT", message)
-}
-
-func getFunctionName() string {
-	// Get the function name from the runtime call stack
-	pc, _, _, ok := runtime.Caller(1)
-	if !ok {
-		return "unknown"
-	}
-	fn := runtime.FuncForPC(pc)
-	if fn == nil {
-		return "unknown"
-	}
-	name := fn.Name()
-	idx := strings.LastIndex(name, ".")
-	if idx >= 0 {
-		name = name[idx+1:]
-	}
-	return name
-}
-
-func (l *logger) log(level string, message string) {
-	timestamp := time.Now().Format("2006-01-02T15:04:05Z07:00")
-	fmt.Fprintf(l.out, "%s %s %s\n", timestamp, level, message)
-	logfile, err := os.OpenFile("bot.log", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-
+func NewLogger() (Logger, error) {
+	var file *os.File
+	var err error
+	var out io.Writer
+	file, err = os.OpenFile("bot.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
-	defer logfile.Close()
-	mw := io.MultiWriter(os.Stdout, logfile)
+	out = os.Stdout
 
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.SetOutput(mw)
+	l := &Logger{
+		out:  out,
+		file: file,
+	}
+	l.log = log.New(io.MultiWriter(out, file), "", 1)
+	return *l, nil
+}
+
+func (l *Logger) Errorf(format string, err error, v ...interface{}) {
+	l.logf(format, err, v...)
+}
+
+func (l *Logger) Infof(format string, v ...interface{}) {
+	l.logf(format, nil, v...)
+}
+
+func (l *Logger) logf(format string, err error, v ...interface{}) {
+
+	if err != nil {
+		// Add log message to the logger as it would be printf
+		msg := fmt.Sprintf(format, v...)
+
+		// Log to stdout
+		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+		logMsg := fmt.Sprintf("%s %s %s ", timestamp, err, msg)
+		l.log.Println(logMsg)
+
+		// Log to file
+		if l.file != nil {
+			fmt.Fprintln(l.file, logMsg)
+		}
+	}
+	// Add log message to the logger as it would be printf
+	msg := fmt.Sprintf(format, v...)
+
+	// Log to stdout
+	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+	logMsg := fmt.Sprintf("%s  %s ", timestamp, msg)
+	l.log.Println(logMsg)
+
+	// Log to file
+	if l.file != nil {
+		fmt.Fprintln(l.file, logMsg)
+	}
+
+}
+
+func (l *Logger) Close() error {
+
+	if l.file != nil {
+		if err := l.file.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
