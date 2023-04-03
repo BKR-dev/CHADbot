@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"terminator-shitpost/handler"
+	api "terminator-shitpost/apihandler"
 	"terminator-shitpost/logging"
 
 	"golang.org/x/net/html"
@@ -157,7 +157,7 @@ findResponse:
 				snarckyResponse = returnResponseFromSlice(strc.responses)
 				break findResponse
 			} else if match == "bible" {
-				snarckyResponse, err = handler.GetRandomBibleVerse()
+				snarckyResponse, err = api.GetRandomBibleVerse()
 				if err != nil {
 					return "", err
 				}
