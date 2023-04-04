@@ -36,6 +36,10 @@ func (l *Logger) Errorf(format string, err error, v ...interface{}) {
 	l.logf(format, err, v...)
 }
 
+func (l *Logger) Error(err error, v ...interface{}) {
+	l.logf("", err, v...)
+}
+
 func (l *Logger) Infof(format string, v ...interface{}) {
 	l.logf(format, nil, v...)
 }

@@ -5,23 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"terminator-shitpost/logging"
 	"time"
 )
-
-/*
-go routine getNewestPost(
-	get topicRespone -> struct
-	push struct -> channel
-	get topicRespone -> newStruct
-	if newStruct has higher PostCount then struct
-		push struct -> channel
-)
-
-
-*/
 
 // TopicResponse
 type TopicResponse struct {
@@ -31,24 +20,27 @@ type TopicResponse struct {
 	HighestPostNumber int    `json:"highest_post_number"`
 	PostStream        struct {
 		Posts []struct {
-			ID        int    `json:"id"`
-			Username  string `json:"username"`
-			UserID    int    `json:"user_id"`
-			UserTitle string `json:"user_title"`
-			Cooked    string `json:"cooked"`
+			ID         int    `json:"id"`
+			UserID     int    `json:"user_id"`
+			Username   string `json:"username"`
+			UserTitle  string `json:"user_title"`
+			PostNumber int    `json:"post_number"`
+			Cooked     string `json:"cooked"`
 		} `json:"posts"`
 	} `json:"post_stream"`
 }
 
-// postCount struct
-type postCount struct {
-	HighestPost int `json:"highest_post_number"`
-}
-
 // latestPost struct
-type latestPost struct {
-	PostStream struct {
+type LatestPost struct {
+	ID                int    `json:"id"`
+	Title             string `json:"title"`
+	HighestPostNumber int    `json:"highest_post_number"`
+	PostStream        struct {
 		Posts []struct {
+			ID         int    `json:"id"`
+			UserID     int    `json:"user_id"`
+			Username   string `json:"username"`
+			UserTitle  string `json:"user_title"`
 			PostNumber int    `json:"post_number"`
 			Cooked     string `json:"cooked"`
 		} `json:"posts"`
@@ -61,8 +53,9 @@ var Scribe logging.Logger
 var topicId string
 var apiKey string
 var apiUser string
-var apiUserId int
+var apiUserId int8
 var url string
+var highestPost int
 
 func init() {
 	topicId = "1118"
@@ -70,6 +63,7 @@ func init() {
 	apiUser = "terminator"
 	apiUserId = 9
 	url = "https://forum.pixelspace.xyz/t/"
+	highestPost = 1
 
 	var err error
 	Scribe, err = logging.NewLogger()
@@ -78,7 +72,7 @@ func init() {
 	}
 }
 
-func GetLastPost(dataCh chan<- TopicResponse, errCh chan<- error) {
+func getPostsFromTopic() (int, error) {
 
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest("GET", url+topicId+".json", nil)
@@ -86,29 +80,71 @@ func GetLastPost(dataCh chan<- TopicResponse, errCh chan<- error) {
 	req.Header.Set("Api-User", apiUser)
 
 	if err != nil {
-		errCh <- err
-		return
+		return 0, err
 	}
-	fmt.Println(req)
+
 	res, err := client.Do(req)
+	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
+		return 0, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
+	}
 
 	if err != nil {
-		errCh <- err
-		return
+		Scribe.Infof("Request Status: %v", res.StatusCode)
+		return 0, err
 	}
 
 	defer res.Body.Close()
 
-	var topicRespone TopicResponse
+	var topicResponse TopicResponse
 
-	err = json.NewDecoder(res.Body).Decode(&topicRespone)
+	err = json.NewDecoder(res.Body).Decode(&topicResponse)
 	if err != nil {
-		errCh <- err
-		return
+		return 0, err
+	}
+	highestPost = topicResponse.HighestPostNumber
+	// time.Sleep(3 * time.Second)
+	return highestPost, nil
+}
+
+// Returns the complete TopicResponse as 1:1 mapped struct, Posts are inside
+// the struct as Slice of Posts in PostStream. Also returns error.
+// will return empty Struct and error if Response StatusCode is NOT 200 - 204
+func GetLastPost() (LatestPost, error) {
+
+	postNumber, err := getPostsFromTopic()
+	if err != nil {
+		return LatestPost{}, err
 	}
 
-	dataCh <- topicRespone
+	client := http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest("GET", url+topicId+"/"+fmt.Sprint(postNumber)+".json", nil)
+	req.Header.Set("Api-Key", apiKey)
+	req.Header.Set("Api-User", apiUser)
 
+	if err != nil {
+		return LatestPost{}, err
+	}
+
+	res, err := client.Do(req)
+	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
+		return LatestPost{}, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
+	}
+
+	if err != nil {
+		Scribe.Infof("Request Status: %v", res.StatusCode)
+		return LatestPost{}, err
+	}
+
+	defer res.Body.Close()
+
+	var lastPost LatestPost
+
+	err = json.NewDecoder(res.Body).Decode(&lastPost)
+	if err != nil {
+		return LatestPost{}, err
+	}
+	// time.Sleep(3 * time.Second)
+	return lastPost, nil
 }
 
 func PostResponseToTopic(message string) error {

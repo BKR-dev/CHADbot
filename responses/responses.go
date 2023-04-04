@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -13,7 +14,7 @@ import (
 // response struct
 // TODO: add bool "mock" for extra mocking
 // TODO: add bool "insult" for extra spice
-type TopicResponses struct {
+type InsultingResponse struct {
 	topic     string
 	keywords  []string
 	responses []string
@@ -29,6 +30,7 @@ func init() {
 	}
 }
 
+// From Post, looks up keywords and matches unto existing responses
 func GetResponse(post string) (string, error) {
 
 	Scribe.Infof("Cleaning up Post: %v", post)
@@ -40,8 +42,9 @@ func GetResponse(post string) (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	if answer == "" {
-		Scribe.Infof("Response is empty!? %v\t.... whats going on?", answer)
+	if answer == "no match found" {
+		Scribe.Infof("No keyword from post matched: ", answer)
+		return "", errors.New("No match between post content and keywords")
 	}
 	Scribe.Infof("Using response: %v", answer)
 	return answer, nil
@@ -86,27 +89,27 @@ func getRandomResponse(keyword []string) (string, error) {
 	var snarckyResponse string
 
 	// all responses per topic
-	weebAnime := TopicResponses{
+	weebAnime := InsultingResponse{
 		topic:    "weebAnime",
 		keywords: []string{"anime", "weeb"},
 		responses: []string{"weebs are retarded and anime is trash", "2D women are for brainlets and retards",
 			"anime is cringe and fake touch some grass"},
 	}
 
-	innawoods := TopicResponses{
+	innawoods := InsultingResponse{
 		topic:    "innawoods",
 		keywords: []string{"innawoods", "inna woods"},
 		responses: []string{"forever alone in the woods", "pissing in jars to keep some company",
 			"getting buttfucked by the local wendingo", "starving in the cold is better than buying starbucks"},
 	}
 
-	nineteen11 := TopicResponses{
+	nineteen11 := InsultingResponse{
 		topic:     "1911",
 		keywords:  []string{"1911"},
 		responses: []string{"two world wars", "chinese made glocks are more versatile"},
 	}
 
-	shillCrypto := TopicResponses{
+	shillCrypto := InsultingResponse{
 		topic:    "shill",
 		keywords: []string{"shill", "crypto", "bitcoin", "etherium", "NFT"},
 		responses: []string{
@@ -115,26 +118,26 @@ func getRandomResponse(keyword []string) (string, error) {
 			"bro invest in my hyper value adding NFT web4.2 finTech renewable ecommerce gaming startup, bro"},
 	}
 
-	diet := TopicResponses{
+	diet := InsultingResponse{
 		topic:    "diet",
 		keywords: []string{"vegan", "keto"},
 		responses: []string{"just eat some real food and stop being a cunt",
 			"stop pretending you are not being brainwashed by some cucked incels to buy there supplements"},
 	}
 
-	opSys := TopicResponses{
+	opSys := InsultingResponse{
 		topic:     "opSys",
 		keywords:  []string{"linux", "macos", "windows"},
 		responses: []string{"stop being such a poor and use a real OS", "you got your programming socks already?"},
 	}
 
-	feds := TopicResponses{
+	feds := InsultingResponse{
 		topic:     "feds",
 		keywords:  []string{"fed", "FBI", "CIA", "ATF", "AFT"},
 		responses: []string{"We've had enough, time to blow this fucker up!", "Wow you're so cool! Go, commit a crime :hugs:"},
 	}
 	// responses slice of structs
-	allResponses := []TopicResponses{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds}
+	allResponses := []InsultingResponse{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds}
 
 	// match trigger and keyword
 findMatch:
@@ -145,6 +148,8 @@ findMatch:
 				break findMatch
 			} else if strings.ToLower(key) == "bible" {
 				match = "bible"
+			} else {
+				match = "null"
 			}
 		}
 	}
@@ -162,6 +167,8 @@ findResponse:
 					return "", err
 				}
 				break findResponse
+			} else if match == "null" {
+				snarckyResponse = "no match found"
 			}
 		}
 	}
