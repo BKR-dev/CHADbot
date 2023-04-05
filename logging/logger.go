@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -51,8 +52,9 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 		msg := fmt.Sprintf(format, v...)
 
 		// Log to stdout
-		timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-		logMsg := fmt.Sprintf("%s %s %s ", timestamp, err, msg)
+		funcName, file, line := getCaller()
+		timestamp := time.Now().Format("15:04:05.000")
+		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n\t%s \n\t%s \n\t%s in line: %d", timestamp, err, msg, funcName, file, line)
 		l.log.Println(logMsg)
 
 		// Log to file
@@ -64,8 +66,9 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 
 	// Log to stdout
-	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-	logMsg := fmt.Sprintf("%s  %s ", timestamp, msg)
+	funcName, file, line := getCaller()
+	timestamp := time.Now().Format("15:04:05.000")
+	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n\t%s \n\t\t%s in line: %d", timestamp, msg, funcName, file, line)
 	l.log.Println(logMsg)
 
 	// Log to file
@@ -84,4 +87,16 @@ func (l *Logger) Close() error {
 	}
 
 	return nil
+}
+
+func getCaller() (string, string, int) {
+	pc, fileName, lineNumber, ok := runtime.Caller(3)
+	if !ok {
+		return "unknown", "", 0
+	}
+	fn := runtime.FuncForPC(pc)
+	if fn == nil {
+		return "unknown", "", 0
+	}
+	return fn.Name(), fileName, lineNumber
 }
