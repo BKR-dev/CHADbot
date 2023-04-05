@@ -7,17 +7,24 @@ import (
 	"strings"
 	api "terminator-shitpost/apihandler"
 	"terminator-shitpost/logging"
+	"time"
 
 	"golang.org/x/net/html"
 )
 
-// response struct
-// TODO: add bool "mock" for extra mocking
-// TODO: add bool "insult" for extra spice
+// InsultResponse
 type InsultingResponse struct {
-	topic     string
-	keywords  []string
-	responses []string
+	topic     string   // name of the InsultResponse
+	keywords  []string // slice of keywords that yield a respone
+	responses []string // slice of spicy responses
+	mock      bool     // trigger for mocking statement
+	insult    bool     // trigger for personal attack
+}
+
+// Insults
+type Insults struct {
+	personalAttack      []string // you sodding tiktak
+	personalTitleAttack []string // insults you for/with your title
 }
 
 var Scribe logging.Logger
@@ -31,7 +38,8 @@ func init() {
 }
 
 // From Post, looks up keywords and matches unto existing responses
-func GetResponse(post string) (string, error) {
+// adds user name and user title to randomly add them for a more personal insult
+func GetResponse(post string, username string, usertitle string) (string, error) {
 
 	Scribe.Infof("Cleaning up Post: %v", post)
 	cleanPost := extractTextFromHTML(post)
@@ -46,6 +54,7 @@ func GetResponse(post string) (string, error) {
 		Scribe.Infof("No keyword from post matched: ", answer)
 		return "", errors.New("No match between post content and keywords")
 	}
+
 	Scribe.Infof("Using response: %v", answer)
 	return answer, nil
 }
@@ -93,14 +102,14 @@ func getRandomResponse(keyword []string) (string, error) {
 		topic:    "weebAnime",
 		keywords: []string{"anime", "weeb"},
 		responses: []string{"weebs are retarded and anime is trash", "2D women are for brainlets and retards",
-			"anime is cringe and fake touch some grass"},
+			"anime is cringe and fake, go and touch some grass"},
 	}
 
 	innawoods := InsultingResponse{
 		topic:    "innawoods",
 		keywords: []string{"innawoods", "inna woods"},
 		responses: []string{"forever alone in the woods", "pissing in jars to keep some company",
-			"getting buttfucked by the local wendingo", "starving in the cold is better than buying starbucks"},
+			"getting buttfucked by the local wendingo", "starving in the cold is better than buying starbucks soy caramel faggoccino"},
 	}
 
 	nineteen11 := InsultingResponse{
@@ -114,7 +123,7 @@ func getRandomResponse(keyword []string) (string, error) {
 		keywords: []string{"shill", "crypto", "bitcoin", "etherium", "NFT"},
 		responses: []string{
 			"Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:",
-			"My NTF ETF i just shorted got me the platinum AMEX so i get paid for spending money i dont have :think_about_it:",
+			"My NFT ETF i just shorted got me the platinum AMEX so i get paid for spending money i dont have :think_about_it:",
 			"bro invest in my hyper value adding NFT web4.2 finTech renewable ecommerce gaming startup, bro"},
 	}
 
@@ -136,8 +145,21 @@ func getRandomResponse(keyword []string) (string, error) {
 		keywords:  []string{"fed", "FBI", "CIA", "ATF", "AFT"},
 		responses: []string{"We've had enough, time to blow this fucker up!", "Wow you're so cool! Go, commit a crime :hugs:"},
 	}
+
+	mockingParantheses := InsultingResponse{
+		topic:     "mockingParantheses",
+		keywords:  []string{"(((", ")))"},
+		responses: []string{},
+	}
+
+	vidja := InsultingResponse{
+		topic:    "videogames",
+		keywords: []string{"gaming", "gayming", "vidja", "videogames"},
+		responses: []string{"grow up already, you are not a child anymore, just let it go",
+			"you played that!? wow amazing, wayyyyy better than watching netflix to numb your brain right!?"},
+	}
 	// responses slice of structs
-	allResponses := []InsultingResponse{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds}
+	allResponses := []InsultingResponse{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds, mockingParantheses, vidja}
 
 	// match trigger and keyword
 findMatch:
@@ -161,12 +183,14 @@ findResponse:
 			if key == match {
 				snarckyResponse = returnResponseFromSlice(strc.responses)
 				break findResponse
+				// special case for bible as response comes from an API
 			} else if match == "bible" {
 				snarckyResponse, err = api.GetRandomBibleVerse()
 				if err != nil {
 					return "", err
 				}
 				break findResponse
+
 			} else if match == "null" {
 				snarckyResponse = "no match found"
 			}
@@ -176,10 +200,23 @@ findResponse:
 	return snarckyResponse, nil
 }
 
+// returns a random response from response slice
 func returnResponseFromSlice(responses []string) string {
+	rand.Seed(time.Now().UnixNano())
 	return responses[rand.Intn((len(responses)-1)+1)]
 }
 
+// randomly sets bool fields
+func rndmBoolFielSet(responses []InsultingResponse) []InsultingResponse {
+	rand.Seed(time.Now().UnixNano())
+	for i := range responses {
+		responses[i].mock = rand.Intn(2) == 1
+		responses[i].insult = rand.Int(2) == 1
+	}
+	return responses
+}
+
+// extracts all html tags from input and returns HTML tag free string
 func extractTextFromHTML(htmlString string) string {
 	doc, err := html.Parse(strings.NewReader(htmlString))
 	if err != nil {
