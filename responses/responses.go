@@ -42,10 +42,12 @@ func init() {
 func GetResponse(post string, username string, usertitle string) (string, error) {
 
 	Scribe.Infof("Cleaning up Post: %v", post)
+	// remove html tags from post
 	cleanPost := extractTextFromHTML(post)
+	// split post into words for being used at akeywords
 	keywords := strings.Split(cleanPost, " ")
 	Scribe.Infof("Looking for keywords: %v", keywords)
-
+	// get
 	answer, err := getRandomResponse(keywords)
 	if err != nil {
 		return "", nil
@@ -59,6 +61,112 @@ func GetResponse(post string, username string, usertitle string) (string, error)
 	return answer, nil
 }
 
+// return a random response when trigger is detected
+func getRandomResponse(keyword []string) (string, error) {
+	var err error
+
+	// insults to add to the response
+	insults := Insults{
+		personalAttack: []string{
+			"you sodding tiktak", "absolute muppet",
+			"complete retard", "cum guzzling lunatic", "beyond meat enjoyer", "incel cuck",
+			"vegan soy brainlet", "just shut the fuck up fag", "first grade degenrate"},
+		personalTitleAttack: []string{"%s is your title!? Fitting...", "%s, yeah right, my ass!"},
+	}
+	// all trigger for a response
+	trigger := []string{
+		"weeb", "anime", "glock", "1911", "bible", "shill", "crypto", "bitcoin",
+		"etherium", "vegan", "keto", "linux", "macos", "windows", "fed", "fbi", "cia", "atf",
+		"aft", "vision", "(((", ")))", "propaganda", "1984", "innawoods", "inna woods",
+		"gaming", "gayming"}
+
+	// making sure we didnt miss any trigger in the keywords
+	for _, kw := range keyword {
+		for _, t := range trigger {
+			if strings.Contains(strings.ToLower(kw), t) {
+				//s this appends a match, meaning that additional trigger is at the end!
+				keyword = append(keyword, t)
+			}
+		}
+	}
+
+	var match string
+	var snarckyResponse string
+
+	allResponses := provideResponses()
+
+	// match trigger and keyword
+findMatch:
+	for _, trig := range trigger {
+		for _, key := range keyword {
+			if trig == strings.ToLower(key) {
+				match = trig
+				break findMatch
+			} else if strings.ToLower(key) == "bible" {
+				match = "bible"
+			} else {
+				match = "null"
+			}
+		}
+	}
+
+	// match keywords
+findResponse:
+	for _, respo := range allResponses {
+		for _, key := range respo.keywords {
+			if key == match {
+				snarckyResponse = randomStringFromSlice(respo.responses)
+				break findResponse
+				// special case for bible as response comes from an API
+			} else if match == "bible" {
+				snarckyResponse, err = api.GetRandomBibleVerse()
+				if err != nil {
+					return "", err
+				}
+				break findResponse
+
+			} else if match == "null" {
+				snarckyResponse = "no match found"
+			}
+		}
+		if respo.mock {
+			snarckyResponse = convertText(snarckyResponse)
+		}
+		if respo.insult {
+			snarckyResponse = snarckyResponse + randomStringFromSlice(insults.personalAttack)
+		}
+	}
+
+	return snarckyResponse, nil
+}
+
+// returns a random response from response slice
+func randomStringFromSlice(responses []string) string {
+	rand.Seed(time.Now().UnixNano())
+	return responses[rand.Intn((len(responses)-1)+1)]
+}
+
+// extracts all html tags from input and returns HTML tag free string
+func extractTextFromHTML(htmlString string) string {
+	doc, err := html.Parse(strings.NewReader(htmlString))
+	if err != nil {
+		Scribe.Errorf("Error removing HTML: %v", err)
+	}
+	var f func(*html.Node)
+	var text string
+	f = func(n *html.Node) {
+		if n.Type == html.TextNode {
+			text += n.Data
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+	return text
+}
+
+// transform a message to A mEsSaGe
 func convertText(statement string) string {
 	var newStatement []string
 	var msg string
@@ -86,16 +194,17 @@ func convertText(statement string) string {
 	return msg
 }
 
-func getRandomResponse(keyword []string) (string, error) {
-	var err error
-	// all trigger for a response
-	trigger := []string{"weeb", "anime", "glock", "1911", "bible", "shill", "crypto", "bitcoin",
-		"etherium", "vegan", "keto", "linux", "macos", "windows", "fed", "fbi", "cia", "atf",
-		"aft", "vision", "(((", ")))", "propaganda", "1984", "innawoods", "inna woods", "gaming",
-		"gayming"}
+// stores all responses
+func provideResponses() []InsultingResponse {
 
-	var match string
-	var snarckyResponse string
+	/* InsultResponse Struct
+	//type InsultingResponse struct {
+	// 	topic     string   // name of the InsultResponse
+	// 	keywords  []string // slice of keywords that yield a respone
+	// 	responses []string // slice of spicy responses
+	// 	mock      bool     // trigger for mocking statement
+	// 	insult    bool     // trigger for personal attack }
+	*/
 
 	// all responses per topic
 	weebAnime := InsultingResponse{
@@ -160,78 +269,17 @@ func getRandomResponse(keyword []string) (string, error) {
 	}
 	// responses slice of structs
 	allResponses := []InsultingResponse{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds, mockingParantheses, vidja}
-
-	// match trigger and keyword
-findMatch:
-	for _, trig := range trigger {
-		for _, key := range keyword {
-			if trig == strings.ToLower(key) {
-				match = trig
-				break findMatch
-			} else if strings.ToLower(key) == "bible" {
-				match = "bible"
-			} else {
-				match = "null"
-			}
-		}
-	}
-
-	// match keywords
-findResponse:
-	for _, strc := range allResponses {
-		for _, key := range strc.keywords {
-			if key == match {
-				snarckyResponse = returnResponseFromSlice(strc.responses)
-				break findResponse
-				// special case for bible as response comes from an API
-			} else if match == "bible" {
-				snarckyResponse, err = api.GetRandomBibleVerse()
-				if err != nil {
-					return "", err
-				}
-				break findResponse
-
-			} else if match == "null" {
-				snarckyResponse = "no match found"
-			}
-		}
-	}
-
-	return snarckyResponse, nil
-}
-
-// returns a random response from response slice
-func returnResponseFromSlice(responses []string) string {
-	rand.Seed(time.Now().UnixNano())
-	return responses[rand.Intn((len(responses)-1)+1)]
+	// set bool fields randomly
+	allResponses = randomBoolSet(allResponses)
+	return allResponses
 }
 
 // randomly sets bool fields
-func rndmBoolFielSet(responses []InsultingResponse) []InsultingResponse {
+func randomBoolSet(responses []InsultingResponse) []InsultingResponse {
 	rand.Seed(time.Now().UnixNano())
 	for i := range responses {
 		responses[i].mock = rand.Intn(2) == 1
-		responses[i].insult = rand.Int(2) == 1
+		responses[i].insult = rand.Intn(2) == 1
 	}
 	return responses
-}
-
-// extracts all html tags from input and returns HTML tag free string
-func extractTextFromHTML(htmlString string) string {
-	doc, err := html.Parse(strings.NewReader(htmlString))
-	if err != nil {
-		Scribe.Errorf("Error removing HTML: %v", err)
-	}
-	var f func(*html.Node)
-	var text string
-	f = func(n *html.Node) {
-		if n.Type == html.TextNode {
-			text += n.Data
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-	f(doc)
-	return text
 }
