@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	api "terminator-shitpost/apihandler"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
@@ -28,10 +27,8 @@ func main() {
 
 		for _, p := range responses.PostStream.Posts {
 
-			// fmt.Println(p)
-
 			if p.PostNumber == highestPostNumber {
-				fmt.Println(p)
+
 				if p.UserID == botUserId {
 					scribe.Infof("Last Post is from Bot - 3 sec sleepy time")
 					time.Sleep(3 * time.Second)

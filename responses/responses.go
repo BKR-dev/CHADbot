@@ -126,7 +126,7 @@ findResponse:
 				break findResponse
 
 			} else if match == "null" {
-				snarckyResponse = "no match found"
+				return "", errors.New("found no match")
 			}
 		}
 		if respo.mock {
