@@ -26,7 +26,7 @@ func main() {
 			if p.PostNumber == responses.HighestPostNumber {
 
 				scribe.Infof("Post: %v", p.Cooked)
-				response, err = answer.GetResponse(p.Cooked)
+				response, err = answer.GetResponse(p.Cooked, p.Username, p.UserTitle)
 				scribe.Infof("Response: ", response)
 				if err != nil {
 					scribe.Errorf("Error getting response: ", err)
