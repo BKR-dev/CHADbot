@@ -83,9 +83,12 @@ func getRandomResponse(keyword []string) (string, error) {
 	// making sure we didnt miss any trigger in the keywords
 	for _, kw := range keyword {
 		for _, t := range trigger {
-			if strings.Contains(strings.ToLower(kw), t) {
-				//s this appends a match, meaning that additional trigger is at the end!
-				keyword = append(keyword, t)
+			if len(t) > 3 {
+				if strings.Contains(strings.ToLower(kw), t) {
+					Scribe.Infof("found trigger in keyword: ", t)
+					//s this appends a match, meaning that additional trigger is at the end!
+					keyword = append(keyword, t)
+				}
 			}
 		}
 	}
@@ -101,6 +104,7 @@ findMatch:
 		for _, key := range keyword {
 			if trig == strings.ToLower(key) {
 				match = trig
+				Scribe.Infof("Found match: ", match)
 				break findMatch
 			} else if strings.ToLower(key) == "bible" {
 				match = "bible"
