@@ -41,6 +41,7 @@ func (l *Logger) Error(err error, v ...interface{}) {
 	l.logf("", err, v...)
 }
 
+// TODO: add logg level for logger funcs
 func (l *Logger) Infof(format string, v ...interface{}) {
 	l.logf(format, nil, v...)
 }
@@ -51,10 +52,10 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 		// Add log message to the logger as it would be printf
 		msg := fmt.Sprintf(format, v...)
 
-		// Log to stdout
+		// Log to file
 		funcName, file, line := getCaller()
 		timestamp := time.Now().Format("15:04:05.000")
-		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n\t%s \n\t%s \n\t%s in line: %d", timestamp, err, msg, funcName, file, line)
+		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n\t%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
 		l.log.Println(logMsg)
 
 		// Log to file
@@ -68,7 +69,7 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 	// Log to stdout
 	funcName, file, line := getCaller()
 	timestamp := time.Now().Format("15:04:05.000")
-	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n\t%s \n\t\t%s in line: %d", timestamp, msg, funcName, file, line)
+	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n\t%s \n\t%s in line: %d\n", timestamp, msg, funcName, file, line)
 	l.log.Println(logMsg)
 
 	// Log to file

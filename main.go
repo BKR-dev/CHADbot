@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	api "terminator-shitpost/apihandler"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
@@ -15,15 +16,27 @@ func main() {
 	}
 
 	var response string
+	var highestPostNumber int
 
 	for {
-		responses, err := api.GetLastPost()
+		responses, botUserId, err := api.GetLastPost()
 		if err != nil {
 			scribe.Errorf("Error getting responses from Topic: ", err)
 		}
 
+		highestPostNumber = responses.HighestPostNumber
+
 		for _, p := range responses.PostStream.Posts {
-			if p.PostNumber == responses.HighestPostNumber {
+
+			// fmt.Println(p)
+
+			if p.PostNumber == highestPostNumber {
+				fmt.Println(p)
+				if p.UserID == botUserId {
+					scribe.Infof("Last Post is from Bot - 3 sec sleepy time")
+					time.Sleep(3 * time.Second)
+					break
+				}
 
 				scribe.Infof("Post: %v", p.Cooked)
 				response, err = answer.GetResponse(p.Cooked, p.Username, p.UserTitle)

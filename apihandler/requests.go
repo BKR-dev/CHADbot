@@ -53,7 +53,7 @@ var Scribe logging.Logger
 var topicId string
 var apiKey string
 var apiUser string
-var apiUserId int8
+var apiUserId int
 var url string
 var highestPost int
 
@@ -61,7 +61,7 @@ func init() {
 	topicId = "1118"
 	apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43"
 	apiUser = "terminator"
-	apiUserId = 9
+	apiUserId = -2
 	url = "https://forum.pixelspace.xyz/t/"
 	highestPost = 1
 
@@ -72,6 +72,7 @@ func init() {
 	}
 }
 
+// gets the topic object and returns the latest post number from it
 func getPostsFromTopic() (int, error) {
 
 	client := http.Client{Timeout: 5 * time.Second}
@@ -109,11 +110,11 @@ func getPostsFromTopic() (int, error) {
 // Returns the complete TopicResponse as 1:1 mapped struct, Posts are inside
 // the struct as Slice of Posts in PostStream. Also returns error.
 // will return empty Struct and error if Response StatusCode is NOT 200 - 204
-func GetLastPost() (LatestPost, error) {
+func GetLastPost() (LatestPost, int, error) {
 
 	postNumber, err := getPostsFromTopic()
 	if err != nil {
-		return LatestPost{}, err
+		return LatestPost{}, apiUserId, err
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
@@ -122,17 +123,18 @@ func GetLastPost() (LatestPost, error) {
 	req.Header.Set("Api-User", apiUser)
 
 	if err != nil {
-		return LatestPost{}, err
+		return LatestPost{}, apiUserId, err
 	}
 
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
-		return LatestPost{}, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
+		return LatestPost{}, apiUserId,
+			errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
 
 	if err != nil {
 		Scribe.Infof("Request Status: %v", res.StatusCode)
-		return LatestPost{}, err
+		return LatestPost{}, apiUserId, err
 	}
 
 	defer res.Body.Close()
@@ -141,10 +143,11 @@ func GetLastPost() (LatestPost, error) {
 
 	err = json.NewDecoder(res.Body).Decode(&lastPost)
 	if err != nil {
-		return LatestPost{}, err
+		return LatestPost{}, apiUserId, err
 	}
-	// time.Sleep(3 * time.Second)
-	return lastPost, nil
+	Scribe.Infof("Got last post, quick 1 second sleep")
+	time.Sleep(1 * time.Second)
+	return lastPost, apiUserId, nil
 }
 
 func PostResponseToTopic(message string) error {
