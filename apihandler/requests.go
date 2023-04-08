@@ -58,7 +58,7 @@ var url string
 var highestPost int
 
 func init() {
-	topicId = "1113"
+	topicId = "1127"
 	apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43"
 	apiUser = "terminator"
 	apiUserId = -2

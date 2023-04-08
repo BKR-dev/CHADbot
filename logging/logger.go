@@ -55,7 +55,7 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 		// Log to file
 		funcName, file, line := getCaller()
 		timestamp := time.Now().Format("15:04:05.000")
-		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n\t%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
+		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
 		l.log.Println(logMsg)
 
 		// Log to file
@@ -69,7 +69,7 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 	// Log to stdout
 	funcName, file, line := getCaller()
 	timestamp := time.Now().Format("15:04:05.000")
-	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n\t%s \n\t%s in line: %d\n", timestamp, msg, funcName, file, line)
+	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n%s \n%s in line: %d\n", timestamp, msg, funcName, file, line)
 	l.log.Println(logMsg)
 
 	// Log to file

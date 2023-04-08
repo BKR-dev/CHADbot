@@ -7,7 +7,6 @@ import (
 	"strings"
 	api "terminator-shitpost/apihandler"
 	"terminator-shitpost/logging"
-	"time"
 
 	"golang.org/x/net/html"
 )
@@ -86,20 +85,6 @@ func getRandomResponse(keyword []string, username string, usertitle string) ([]s
 		"aft", "vision", "(((", ")))", "propaganda", "1984", "innawoods", "inna woods",
 		"gaming", "gayming"}
 
-	// making sure we didnt miss any trigger in the keywords
-	for _, kw := range keyword {
-		for _, t := range trigger {
-			if len(t) > 3 {
-				if strings.Contains(strings.ToLower(kw), t) {
-					Scribe.Infof("found trigger in keyword: %v", t)
-					//s this appends a match, meaning that additional trigger is at the end!
-					keyword = append(keyword, t)
-				}
-			}
-			Scribe.Infof("found trigger in keyword: %v", t)
-		}
-	}
-
 	var match string
 	var snarckyResponse string
 	var rndmInsult RandomInsult
@@ -112,14 +97,19 @@ findMatch:
 		for _, key := range keyword {
 			if trig == strings.ToLower(key) {
 				match = trig
-				Scribe.Infof("Found match: ", match)
+				Scribe.Infof("Found match: %v", match)
 				break findMatch
 			} else if strings.ToLower(key) == "bible" {
+				Scribe.Infof("Found match: bible")
 				match = "bible"
 			} else {
-				match = "null"
+				match = ""
 			}
 		}
+	}
+
+	if len(match) < 1 {
+		return nil, errors.New("found no match")
 	}
 
 	// match keywords
@@ -136,8 +126,7 @@ findResponse:
 					return nil, err
 				}
 				break findResponse
-
-			} else if match == "null" {
+			} else if match == "" {
 				return nil, errors.New("found no match")
 			}
 		}
@@ -174,7 +163,6 @@ findResponse:
 
 // returns a random response from response slice
 func randomStringFromSlice(responses []string) string {
-	rand.Seed(time.Now().UnixNano())
 	return responses[rand.Intn((len(responses)-1)+1)]
 }
 
@@ -272,7 +260,7 @@ func provideResponses() []InsultingResponse {
 		topic:    "diet",
 		keywords: []string{"vegan", "keto"},
 		responses: []string{"just eat some real food and stop being a cunt",
-			"stop pretending you are not being brainwashed by some cucked incels to buy there supplements"},
+			"stop pretending you are not being brainwashed by some cucked incels to buy their supplements"},
 	}
 
 	opSys := InsultingResponse{

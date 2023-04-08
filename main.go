@@ -16,6 +16,7 @@ func main() {
 
 	var response string
 	var highestPostNumber int
+	botTimeout := 3
 
 	for {
 		responses, botUserId, err := api.GetLastPost()
@@ -30,19 +31,25 @@ func main() {
 			if p.PostNumber == highestPostNumber {
 
 				if p.UserID == botUserId {
-					scribe.Infof("Last Post is from Bot - 3 sec sleepy time")
-					time.Sleep(3 * time.Second)
+					scribe.Infof("Last Post is from Bot ")
+					time.Sleep(time.Duration(botTimeout) * time.Second)
+					botTimeout++
+					scribe.Infof("Sleeping for %d", botTimeout)
 					break
 				}
 
 				scribe.Infof("Post: %v", p.Cooked)
 				response, err = answer.GetResponse(p.Cooked, p.Username, p.UserTitle)
-				scribe.Infof("Response: ", response)
+				scribe.Infof("Response: %v", response)
 				if err != nil {
 					scribe.Errorf("Error getting response: ", err)
 				}
-
+				if response == "" {
+					time.Sleep(time.Duration(botTimeout) * time.Second)
+					scribe.Infof("Sleeping for %d", botTimeout)
+				}
 			}
+			botTimeout++
 		}
 
 		err = api.PostResponseToTopic(response)
@@ -50,6 +57,7 @@ func main() {
 			scribe.Error(err)
 		}
 
-		time.Sleep(3 * time.Second)
+		botTimeout = 3
+		time.Sleep(5 * time.Second)
 	}
 }
