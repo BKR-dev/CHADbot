@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	api "terminator-shitpost/apihandler"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
@@ -27,7 +28,8 @@ func main() {
 		highestPostNumber = responses.HighestPostNumber
 
 		for _, p := range responses.PostStream.Posts {
-
+			// more randomness
+			rand.Seed(time.Now().UnixNano())
 			// only highest Post aka latest is getting looked at
 			if p.PostNumber == highestPostNumber {
 

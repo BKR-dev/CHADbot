@@ -113,6 +113,8 @@ findMatch:
 	}
 
 	// match keywords
+	// FIXME:
+	// when a match is found add to a slice and pull form it randomly
 findResponse:
 	for _, respo := range allResponses {
 		for _, key := range respo.keywords {
@@ -163,6 +165,7 @@ findResponse:
 
 // returns a random response from response slice
 func randomStringFromSlice(responses []string) string {
+
 	return responses[rand.Intn((len(responses)-1)+1)]
 }
 
