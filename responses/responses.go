@@ -17,14 +17,17 @@ type InsultingResponse struct {
 	topic     string   // name of the InsultResponse
 	keywords  []string // slice of keywords that yield a respone
 	responses []string // slice of spicy responses
-	mock      bool     // trigger for mocking statement
-	insult    bool     // trigger for personal attack
 }
 
 // Insults
 type Insults struct {
 	personalAttack      []string // you sodding tiktak
 	personalTitleAttack []string // insults you for/with your title
+}
+
+type RandomInsult struct {
+	mock   bool // trigger for mocking statement
+	insult bool // trigger for personal attack
 }
 
 var Scribe logging.Logger
@@ -48,23 +51,26 @@ func GetResponse(post string, username string, usertitle string) (string, error)
 	keywords := strings.Split(cleanPost, " ")
 	Scribe.Infof("Looking for keywords: %v", keywords)
 	// get
-	answer, err := getRandomResponse(keywords)
+	answer, err := getRandomResponse(keywords, username, usertitle)
 	if err != nil {
 		return "", nil
 	}
-	if answer == "no match found" {
+
+	if answer == nil {
 		Scribe.Infof("No keyword from post matched: ", answer)
 		return "", errors.New("No match between post content and keywords")
 	}
 
+	botAnswer := strings.Join(answer, " ")
+
 	Scribe.Infof("Using response: %v", answer)
-	return answer, nil
+	return botAnswer, nil
 }
 
 // return a random response when trigger is detected
-func getRandomResponse(keyword []string) (string, error) {
+func getRandomResponse(keyword []string, username string, usertitle string) ([]string, error) {
 	var err error
-
+	var responseFull []string
 	// insults to add to the response
 	insults := Insults{
 		personalAttack: []string{
@@ -85,16 +91,18 @@ func getRandomResponse(keyword []string) (string, error) {
 		for _, t := range trigger {
 			if len(t) > 3 {
 				if strings.Contains(strings.ToLower(kw), t) {
-					Scribe.Infof("found trigger in keyword: ", t)
+					Scribe.Infof("found trigger in keyword: %v", t)
 					//s this appends a match, meaning that additional trigger is at the end!
 					keyword = append(keyword, t)
 				}
 			}
+			Scribe.Infof("found trigger in keyword: %v", t)
 		}
 	}
 
 	var match string
 	var snarckyResponse string
+	var rndmInsult RandomInsult
 
 	allResponses := provideResponses()
 
@@ -125,23 +133,43 @@ findResponse:
 			} else if match == "bible" {
 				snarckyResponse, err = api.GetRandomBibleVerse()
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 				break findResponse
 
 			} else if match == "null" {
-				return "", errors.New("found no match")
+				return nil, errors.New("found no match")
 			}
-		}
-		if respo.mock {
-			snarckyResponse = convertText(snarckyResponse)
-		}
-		if respo.insult {
-			snarckyResponse = snarckyResponse + randomStringFromSlice(insults.personalAttack)
 		}
 	}
 
-	return snarckyResponse, nil
+	responseFull = append(responseFull, snarckyResponse)
+
+	/*
+		Anatomy if a Response:
+		when mock is true - convertText
+		snarckyResponse = fmt.Sprintf("%v, %v", convertText(snarckyResponse))
+		when insult is true - response + personal insult
+		snarckyResponse = fmt.Sprintf("%v, %v", snarckyResponse, personalAttack)
+	*/
+
+	rndmInsult = randomBoolSet(rndmInsult)
+	// response + mock + insult
+	if rndmInsult.mock && rndmInsult.insult {
+		responseFull[0] = convertText(snarckyResponse)
+		responseFull = append(responseFull, randomStringFromSlice(insults.personalAttack))
+	}
+	//  response + mock
+	if rndmInsult.mock && !rndmInsult.insult {
+		responseFull[0] = convertText(snarckyResponse)
+	}
+	// response + insult
+	if !rndmInsult.mock && rndmInsult.insult {
+		responseFull = append(responseFull, randomStringFromSlice(insults.personalAttack))
+		responseFull = append(responseFull, username)
+	}
+
+	return responseFull, nil
 }
 
 // returns a random response from response slice
@@ -273,17 +301,13 @@ func provideResponses() []InsultingResponse {
 	}
 	// responses slice of structs
 	allResponses := []InsultingResponse{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds, mockingParantheses, vidja}
-	// set bool fields randomly
-	allResponses = randomBoolSet(allResponses)
+
 	return allResponses
 }
 
 // randomly sets bool fields
-func randomBoolSet(responses []InsultingResponse) []InsultingResponse {
-	rand.Seed(time.Now().UnixNano())
-	for i := range responses {
-		responses[i].mock = rand.Intn(2) == 1
-		responses[i].insult = rand.Intn(2) == 1
-	}
-	return responses
+func randomBoolSet(rndmI RandomInsult) RandomInsult {
+	rndmI.mock = rand.Intn(2) == 1
+	rndmI.insult = rand.Intn(2) == 1
+	return rndmI
 }
