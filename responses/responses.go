@@ -60,7 +60,7 @@ func GetResponse(post string, username string, usertitle string) (string, error)
 		return "", errors.New("No match between post content and keywords")
 	}
 
-	botAnswer := strings.Join(answer, " ")
+	botAnswer := strings.Join(answer, ", ")
 
 	Scribe.Infof("Using response: %v", answer)
 	return botAnswer, nil
