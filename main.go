@@ -27,6 +27,7 @@ func main() {
 
 		highestPostNumber = responses.HighestPostNumber
 
+	postresponse:
 		for _, p := range responses.PostStream.Posts {
 			// more randomness
 			rand.Seed(time.Now().UnixNano())
@@ -37,11 +38,10 @@ func main() {
 				if p.UserID == botUserId {
 					scribe.Infof("Last Post is from Bot ")
 					time.Sleep(time.Duration(botTimeout) * time.Second)
-					botTimeout++
-					scribe.Infof("Sleeping for %d", botTimeout)
-					break
+					break postresponse
 				}
 
+				// FIXME: when no new post is created or last post is from bot no resposne should be sent
 				// get a response for the last post
 				scribe.Infof("Post: %v", p.Cooked)
 				response, err = answer.GetResponse(p.Cooked, p.Username, p.UserTitle)
@@ -55,7 +55,6 @@ func main() {
 					time.Sleep(time.Duration(botTimeout) * time.Second)
 				}
 			}
-			botTimeout++
 		}
 
 		// actually post response to topic
@@ -64,8 +63,7 @@ func main() {
 		if err != nil {
 			scribe.Error(err)
 		}
-
-		botTimeout = 3
+		scribe.Infof("Sleeping for 5 seconds")
 		time.Sleep(5 * time.Second)
 	}
 }
