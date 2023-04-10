@@ -30,6 +30,7 @@ func ProvideResponsesAndInsults() ([]InsultingResponse, Insults, []string) {
 			"incel cuck",
 			"vegan soy brainlet",
 			"just shut the fuck up fag",
+			"bubble tea enjoyer",
 			"first grade degenerate"},
 		personalTitleAttack: []string{
 			"%s is your title!? Fitting...", // add insult for a users title here
