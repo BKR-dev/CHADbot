@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/rand"
 	api "terminator-shitpost/apihandler"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
@@ -27,35 +26,36 @@ func main() {
 
 		highestPostNumber = responses.HighestPostNumber
 
-	postresponse:
-		for _, p := range responses.PostStream.Posts {
-			// more randomness
-			rand.Seed(time.Now().UnixNano())
-			// only highest Post aka latest is getting looked at
-			if p.PostNumber == highestPostNumber {
+		//for _, p := range responses.PostStream.Posts {
+		// only highest Post aka latest is getting looked at
+		currentPost := responses.PostStream.Posts[len(responses.PostStream.Posts)-1].PostNumber
+		currentResp := responses.PostStream.Posts[len(responses.PostStream.Posts)-1]
+		if currentPost == highestPostNumber {
+			//if p.PostNumber == highestPostNumber {
 
-				// if the last user was the bot, sleepy time
-				if p.UserID == botUserId {
-					scribe.Infof("Last Post is from Bot ")
-					time.Sleep(time.Duration(botTimeout) * time.Second)
-					break postresponse
-				}
+			// if the last user was the bot, sleepy time
+			if currentResp.UserID == botUserId {
+				scribe.Infof("Last Post is from Bot ")
+				time.Sleep(time.Duration(botTimeout) * time.Second)
+				botTimeout++
+				scribe.Infof("Sleeping for %d", botTimeout)
+				continue
+			}
 
-				// FIXME: when no new post is created or last post is from bot no resposne should be sent
-				// get a response for the last post
-				scribe.Infof("Post: %v", p.Cooked)
-				response, err = answer.GetResponse(p.Cooked, p.Username, p.UserTitle)
-				scribe.Infof("Response: %v", response)
-				if err != nil {
-					scribe.Errorf("Error getting response: ", err)
-				}
-				// if the response is empty, no keyword, leepy time
-				if response == "" {
-					scribe.Infof("Sleeping for %d", botTimeout)
-					time.Sleep(time.Duration(botTimeout) * time.Second)
-				}
+			// get a response for the last post
+			scribe.Infof("Post: %v", currentResp.Cooked)
+			response, err = answer.GetResponse(currentResp.Cooked, currentResp.Username, currentResp.UserTitle)
+			scribe.Infof("Response: %v", response)
+			if err != nil {
+				scribe.Errorf("Error getting response: ", err)
+			}
+			// if the response is empty, no keyword, leepy time
+			if response == "" {
+				scribe.Infof("Sleeping for %d", botTimeout)
+				time.Sleep(time.Duration(botTimeout) * time.Second)
 			}
 		}
+		botTimeout++
 
 		// actually post response to topic
 		scribe.Infof("Sending response: %v", response)
