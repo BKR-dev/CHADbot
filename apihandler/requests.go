@@ -59,11 +59,16 @@ var highestPost int
 
 func init() {
 	topicId = "1127"
-	apiKey = "5634da9f596ecc2740440a75499176a3b8181752aa418696b61ed08b982c3a43"
-	apiUser = "terminator"
-	apiUserId = -2
+	apiKey = "0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da"
+	apiUser = "CHADbot"
+	apiUserId = 101
 	url = "https://forum.pixelspace.xyz/t/"
 	highestPost = 1
+
+	// 101
+	// 0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da
+	// CHADbot
+	// burying feds innawoods after making them sleep with akimbo 1911 because their vegan or  keto weirdo gaming fags who love anime and slurp ramen all day
 
 	var err error
 	Scribe, err = logging.NewLogger()

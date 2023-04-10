@@ -63,8 +63,7 @@ func main() {
 		if err != nil {
 			scribe.Error(err)
 		}
-
-		botTimeout = 3
+		scribe.Infof("Sleeping for 5 seconds")
 		time.Sleep(5 * time.Second)
 	}
 }

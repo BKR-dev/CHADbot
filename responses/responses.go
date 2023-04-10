@@ -11,29 +11,16 @@ import (
 	"golang.org/x/net/html"
 )
 
-// InsultResponse
-type InsultingResponse struct {
-	topic     string   // name of the InsultResponse
-	keywords  []string // slice of keywords that yield a respone
-	responses []string // slice of spicy responses
-}
-
-// Insults
-type Insults struct {
-	personalAttack      []string // you sodding tiktak
-	personalTitleAttack []string // insults you for/with your title
-}
-
 type RandomInsult struct {
-	mock   bool // trigger for mocking statement
-	insult bool // trigger for personal attack
+	mock   bool // trigger for mocking statement, randomly set
+	insult bool // trigger for personal attack, randomly set
 }
 
-var Scribe logging.Logger
+var scribe logging.Logger
 
 func init() {
 	var err error
-	Scribe, err = logging.NewLogger()
+	scribe, err = logging.NewLogger()
 	if err != nil {
 		fmt.Println("Error creating logger in responses.go")
 	}
@@ -43,12 +30,12 @@ func init() {
 // adds user name and user title to randomly add them for a more personal insult
 func GetResponse(post string, username string, usertitle string) (string, error) {
 
-	Scribe.Infof("Cleaning up Post: %v", post)
+	scribe.Infof("Cleaning up Post: %v", post)
 	// remove html tags from post
 	cleanPost := extractTextFromHTML(post)
 	// split post into words for being used at akeywords
 	keywords := strings.Split(cleanPost, " ")
-	Scribe.Infof("Looking for keywords: %v", keywords)
+	scribe.Infof("Looking for keywords: %v", keywords)
 	// get
 	answer, err := getRandomResponse(keywords, username, usertitle)
 	if err != nil {
@@ -56,13 +43,13 @@ func GetResponse(post string, username string, usertitle string) (string, error)
 	}
 
 	if answer == nil {
-		Scribe.Infof("No keyword from post matched: ", answer)
+		scribe.Infof("No keyword from post matched: ", answer)
 		return "", errors.New("No match between post content and keywords")
 	}
 
 	botAnswer := strings.Join(answer, ", ")
 
-	Scribe.Infof("Using response: %v", answer)
+	scribe.Infof("Using response: %v", answer)
 	return botAnswer, nil
 }
 
@@ -70,77 +57,57 @@ func GetResponse(post string, username string, usertitle string) (string, error)
 func getRandomResponse(keyword []string, username string, usertitle string) ([]string, error) {
 	var err error
 	var responseFull []string
-	// insults to add to the response
-	insults := Insults{
-		personalAttack: []string{
-			"you sodding tiktak", "absolute muppet",
-			"complete retard", "cum guzzling lunatic", "beyond meat enjoyer", "incel cuck",
-			"vegan soy brainlet", "just shut the fuck up fag", "first grade degenrate"},
-		personalTitleAttack: []string{"%s is your title!? Fitting...", "%s, yeah right, my ass!"},
-	}
-	// all trigger for a response
-	trigger := []string{
-		"weeb", "anime", "glock", "1911", "bible", "shill", "crypto", "bitcoin",
-		"etherium", "vegan", "keto", "linux", "macos", "windows", "fed", "fbi", "cia", "atf",
-		"aft", "vision", "(((", ")))", "propaganda", "1984", "innawoods", "inna woods",
-		"gaming", "gayming"}
-
-	var match string
+	var allMatches []string
 	var snarckyResponse string
 	var rndmInsult RandomInsult
 
-	allResponses := provideResponses()
+	if len(keyword) < 1 {
+		return nil, errors.New("keywords empty")
+	}
 
-	// match trigger and keyword
-findMatch:
+	allResponses, insults, trigger := ProvideResponsesAndInsults()
+	scribe.Infof("keywords from responses: %v", trigger)
+	// match trigger and keyword and add to slice for all matches
+
 	for _, trig := range trigger {
 		for _, key := range keyword {
 			if trig == strings.ToLower(key) {
-				match = trig
-				Scribe.Infof("Found match: %v", match)
-				break findMatch
+				allMatches = append(allMatches, trig)
+				scribe.Infof("Found match: %v", trig)
 			} else if strings.ToLower(key) == "bible" {
-				Scribe.Infof("Found match: bible")
-				match = "bible"
-			} else {
-				match = ""
+				scribe.Infof("Found match: bible")
+				allMatches = append(allMatches, "bible")
 			}
 		}
 	}
 
-	if len(match) < 1 {
-		return nil, errors.New("found no match")
-	}
+	scribe.Infof("allMatches found: %v", allMatches)
 
-	// match keywords
-findResponse:
-	for _, respo := range allResponses {
-		for _, key := range respo.keywords {
-			if key == match {
-				snarckyResponse = randomStringFromSlice(respo.responses)
-				break findResponse
-				// special case for bible as response comes from an API
-			} else if match == "bible" {
-				snarckyResponse, err = api.GetRandomBibleVerse()
-				if err != nil {
-					return nil, err
+	// if len allMatches is empty, we is done
+	if len(allMatches) < 1 {
+		return nil, errors.New("found no match")
+		// bible case
+	} else if allMatches[0] == "bible" {
+		snarckyResponse, err = api.GetRandomBibleVerse()
+		if err != nil {
+			return nil, err
+		}
+	} else if len(allMatches) > 1 {
+		// random match from allMatches
+		match := randomStringFromSlice(allMatches)
+	findResponse:
+		for _, r := range allResponses {
+			for _, k := range r.keywords {
+				if k == match {
+					snarckyResponse = randomStringFromSlice(r.responses)
+					scribe.Infof("Found response %v for keyword %v", snarckyResponse, k)
+					break findResponse
 				}
-				break findResponse
-			} else if match == "" {
-				return nil, errors.New("found no match")
 			}
 		}
 	}
 
 	responseFull = append(responseFull, snarckyResponse)
-
-	/*
-		Anatomy if a Response:
-		when mock is true - convertText
-		snarckyResponse = fmt.Sprintf("%v, %v", convertText(snarckyResponse))
-		when insult is true - response + personal insult
-		snarckyResponse = fmt.Sprintf("%v, %v", snarckyResponse, personalAttack)
-	*/
 
 	rndmInsult = randomBoolSet(rndmInsult)
 	// response + mock + insult
@@ -170,7 +137,7 @@ func randomStringFromSlice(responses []string) string {
 func extractTextFromHTML(htmlString string) string {
 	doc, err := html.Parse(strings.NewReader(htmlString))
 	if err != nil {
-		Scribe.Errorf("Error removing HTML: %v", err)
+		scribe.Errorf("Error removing HTML: %v", err)
 	}
 	var f func(*html.Node)
 	var text string
@@ -214,86 +181,7 @@ func convertText(statement string) string {
 	return msg
 }
 
-// stores all responses
-func provideResponses() []InsultingResponse {
-
-	/* InsultResponse Struct
-	//type InsultingResponse struct {
-	// 	topic     string   // name of the InsultResponse
-	// 	keywords  []string // slice of keywords that yield a respone
-	// 	responses []string // slice of spicy responses
-	// 	mock      bool     // trigger for mocking statement
-	// 	insult    bool     // trigger for personal attack }
-	*/
-
-	// all responses per topic
-	weebAnime := InsultingResponse{
-		topic:    "weebAnime",
-		keywords: []string{"anime", "weeb"},
-		responses: []string{"weebs are retarded and anime is trash", "2D women are for brainlets and retards",
-			"anime is cringe and fake, go and touch some grass"},
-	}
-
-	innawoods := InsultingResponse{
-		topic:    "innawoods",
-		keywords: []string{"innawoods", "inna woods"},
-		responses: []string{"forever alone in the woods", "pissing in jars to keep some company",
-			"getting buttfucked by the local wendingo", "starving in the cold is better than buying starbucks soy caramel faggoccino"},
-	}
-
-	nineteen11 := InsultingResponse{
-		topic:     "1911",
-		keywords:  []string{"1911"},
-		responses: []string{"two world wars", "chinese made glocks are more versatile"},
-	}
-
-	shillCrypto := InsultingResponse{
-		topic:    "shill",
-		keywords: []string{"shill", "crypto", "bitcoin", "etherium", "NFT"},
-		responses: []string{
-			"Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:",
-			"My NFT ETF i just shorted got me the platinum AMEX so i get paid for spending money i dont have :think_about_it:",
-			"bro invest in my hyper value adding NFT web4.2 finTech renewable ecommerce gaming startup, bro"},
-	}
-
-	diet := InsultingResponse{
-		topic:    "diet",
-		keywords: []string{"vegan", "keto"},
-		responses: []string{"just eat some real food and stop being a cunt",
-			"stop pretending you are not being brainwashed by some cucked incels to buy their supplements"},
-	}
-
-	opSys := InsultingResponse{
-		topic:     "opSys",
-		keywords:  []string{"linux", "macos", "windows"},
-		responses: []string{"stop being such a poor and use a real OS", "you got your programming socks already?"},
-	}
-
-	feds := InsultingResponse{
-		topic:     "feds",
-		keywords:  []string{"fed", "FBI", "CIA", "ATF", "AFT"},
-		responses: []string{"We've had enough, time to blow this fucker up!", "Wow you're so cool! Go, commit a crime :hugs:"},
-	}
-
-	mockingParantheses := InsultingResponse{
-		topic:     "mockingParantheses",
-		keywords:  []string{"(((", ")))"},
-		responses: []string{},
-	}
-
-	vidja := InsultingResponse{
-		topic:    "videogames",
-		keywords: []string{"gaming", "gayming", "vidja", "videogames"},
-		responses: []string{"grow up already, you are not a child anymore, just let it go",
-			"you played that!? wow amazing, wayyyyy better than watching netflix to numb your brain right!?"},
-	}
-	// responses slice of structs
-	allResponses := []InsultingResponse{weebAnime, innawoods, nineteen11, shillCrypto, diet, opSys, feds, mockingParantheses, vidja}
-
-	return allResponses
-}
-
-// randomly sets bool fields
+// randomly sets bool fields to randomInsult
 func randomBoolSet(rndmI RandomInsult) RandomInsult {
 	rndmI.mock = rand.Intn(2) == 1
 	rndmI.insult = rand.Intn(2) == 1
