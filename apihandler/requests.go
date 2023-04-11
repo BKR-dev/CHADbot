@@ -155,6 +155,7 @@ func GetLastPost() (LatestPost, int, error) {
 	return lastPost, apiUserId, nil
 }
 
+// posts response to discourse api
 func PostResponseToTopic(message string) error {
 
 	if message == "" {
@@ -186,6 +187,7 @@ func PostResponseToTopic(message string) error {
 	return nil
 }
 
+// fetches a random bible verse from labs.bible.org and returns a verse or error
 func GetRandomBibleVerse() (string, error) {
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest("GET", "https://labs.bible.org/api/?passage=random", nil)
