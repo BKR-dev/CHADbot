@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -9,16 +10,39 @@ import (
 	"time"
 )
 
+type LogLevel int
+
+const (
+	DEBUG LogLevel = iota
+	INFO
+	WARNING
+	ERROR
+)
+
+// Logger object
 type Logger struct {
-	out  io.Writer
-	file *os.File
-	log  *log.Logger
+	Level LogLevel
+	out   io.Writer
+	file  *os.File
+	log   *log.Logger
 }
 
-func NewLogger() (Logger, error) {
+type logMessage struct {
+	LogLevel     string `json:"loglevel"`
+	Timestamp    string `json:"timestamp"`
+	Message      string `json:"message"`
+	Error        error  `json:"error,omitempty"`
+	FunctionName string `json:"functionname"`
+	FileName     string `json:"filename"`
+	FileLine     int    `json:"fileline"`
+}
+
+// NewLogger Constructor
+func NewLogger() (*Logger, error) {
 	var file *os.File
 	var err error
 	var out io.Writer
+
 	file, err = os.OpenFile("bot.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println(err)
@@ -26,71 +50,114 @@ func NewLogger() (Logger, error) {
 	out = os.Stdout
 
 	l := &Logger{
-		out:  out,
-		file: file,
+		Level: DEBUG,
+		out:   out,
+		file:  file,
 	}
+
 	l.log = log.New(io.MultiWriter(out, file), "", 1)
-	return *l, nil
+	return l, nil
 }
 
-func (l *Logger) Errorf(format string, err error, v ...interface{}) {
-	l.logf(format, err, v...)
+// logger error formatting function
+func (l *Logger) Errorf(format string, err error, a ...any) {
+	l.logf(ERROR, format, err, a...)
 }
 
-func (l *Logger) Error(err error, v ...interface{}) {
-	l.logf("", err, v...)
+// logger error function
+func (l *Logger) Error(err error, a ...any) {
+	l.logf(ERROR, "", err, a...)
 }
 
-// TODO: add logg level for logger funcs
-func (l *Logger) Infof(format string, v ...interface{}) {
-	l.logf(format, nil, v...)
+// logger warning formatting function
+func (l *Logger) Warningf(format string, err error, a ...any) {
+	l.logf(WARNING, format, err, a...)
 }
 
-func (l *Logger) logf(format string, err error, v ...interface{}) {
+// logger warning function
+func (l *Logger) Warning(format string, a ...any) {
+	l.logf(WARNING, format, nil, a...)
+}
 
-	if err != nil {
-		// Add log message to the logger as it would be printf
-		msg := fmt.Sprintf(format, v...)
+// logger info formatting function
+func (l *Logger) Infof(format string, a ...any) {
+	l.logf(INFO, format, nil, a...)
+}
 
-		// Log to file
-		funcName, file, line := getCaller()
-		timestamp := time.Now().Format("15:04:05.000")
-		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
-		l.log.Println(logMsg)
+// logger function to log to stdout and to a file
+func (l *Logger) logf(level LogLevel, format string, err error, a ...any) {
 
-		// Log to file
-		if l.file != nil {
-			fmt.Fprintln(l.file, logMsg)
-		}
+	// checks if logLevel is not below specified LogLevel
+	if level < l.Level {
+		return
 	}
+
 	// Add log message to the logger as it would be printf
-	msg := fmt.Sprintf(format, v...)
+	msg := fmt.Sprintf(format, a...)
 
 	// Log to stdout
 	funcName, file, line := getCaller()
 	timestamp := time.Now().Format("15:04:05.000")
-	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n%s \n%s in line: %d\n", timestamp, msg, funcName, file, line)
-	l.log.Println(logMsg)
+
+	// Create logMessage struct
+	logMsg := &logMessage{
+		LogLevel:     logLevelToString(level),
+		Timestamp:    timestamp,
+		Message:      msg,
+		Error:        err,
+		FunctionName: funcName,
+		FileName:     file,
+		FileLine:     line,
+	}
+
+	// Marshal logMessage struct to JSON
+	jsonLogMsg, err := json.Marshal(logMsg)
+	if err != nil {
+		fmt.Println("Error marshaling log message to JSON:", err)
+		return
+	}
+
+	// to stdout
+	l.log.Println(string(jsonLogMsg))
 
 	// Log to file
 	if l.file != nil {
-		fmt.Fprintln(l.file, logMsg)
+		if _, err := fmt.Fprintln(l.file, logMsg); err != nil {
+			fmt.Println("Error writing to log file:", err)
+		}
 	}
-
 }
 
-func (l *Logger) Close() error {
+// return loglevel string from leel
+func logLevelToString(level LogLevel) string {
+	switch level {
+	case DEBUG:
+		return "DEBUG"
+	case INFO:
+		return "INFO"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	default:
+		return "UNKNOWN"
+	}
+}
 
+// Logger Close
+func (l *Logger) Close() error {
 	if l.file != nil {
 		if err := l.file.Close(); err != nil {
+			fmt.Println("Error closing log file:", err)
 			return err
 		}
 	}
-
 	return nil
 }
 
+// returns function invocations information
 func getCaller() (string, string, int) {
+
 	pc, fileName, lineNumber, ok := runtime.Caller(3)
 	if !ok {
 		return "unknown", "", 0

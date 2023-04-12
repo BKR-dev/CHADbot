@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
-	"io/ioutil"
 	"net/http"
 	"terminator-shitpost/logging"
 	"time"
@@ -47,7 +47,7 @@ type LatestPost struct {
 	} `json:"post_stream"`
 }
 
-var Scribe logging.Logger
+var Scribe *logging.Logger
 
 // target thread, apiKey and User
 var topicId string
@@ -57,6 +57,7 @@ var apiUserId int
 var url string
 var highestPost int
 
+// initializing vars
 func init() {
 	topicId = "1127"
 	apiKey = "0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da"
@@ -155,6 +156,7 @@ func GetLastPost() (LatestPost, int, error) {
 	return lastPost, apiUserId, nil
 }
 
+// posts response to discourse api
 func PostResponseToTopic(message string) error {
 
 	if message == "" {
@@ -186,6 +188,7 @@ func PostResponseToTopic(message string) error {
 	return nil
 }
 
+// fetches a random bible verse from labs.bible.org and returns a verse or error
 func GetRandomBibleVerse() (string, error) {
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest("GET", "https://labs.bible.org/api/?passage=random", nil)
@@ -196,7 +199,7 @@ func GetRandomBibleVerse() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
