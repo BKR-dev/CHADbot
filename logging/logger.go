@@ -36,17 +36,17 @@ func NewLogger() (Logger, error) {
 }
 
 // logger error formatting function
-func (l *Logger) Errorf(format string, err error, v ...interface{}) {
+func (l *Logger) Errorf(format string, err error, a ...any) {
 	l.logf(format, err, v...)
 }
 
 // logger error function
-func (l *Logger) Error(err error, v ...interface{}) {
+func (l *Logger) Error(err error, a ...any) {
 	l.logf("", err, v...)
 }
 
 // logger info formatting function
-func (l *Logger) Infof(format string, v ...interface{}) {
+func (l *Logger) Infof(format string, a ...any) {
 	l.logf(format, nil, v...)
 }
 
@@ -54,7 +54,7 @@ func (l *Logger) Infof(format string, v ...interface{}) {
 // TODO: add log rotate
 // TODO: add formatting (json?)
 // logger function to log to stdout and to a file
-func (l *Logger) logf(format string, err error, v ...interface{}) {
+func (l *Logger) logf(format string, err error, a ...any) {
 
 	if err != nil {
 		// Add log message to the logger as it would be printf
@@ -84,7 +84,6 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 	if l.file != nil {
 		fmt.Fprintln(l.file, logMsg)
 	}
-
 }
 
 // Logger Close
@@ -99,6 +98,7 @@ func (l *Logger) Close() error {
 
 // returns function invocations information
 func getCaller() (string, string, int) {
+
 	pc, fileName, lineNumber, ok := runtime.Caller(3)
 	if !ok {
 		return "unknown", "", 0
