@@ -9,26 +9,38 @@ import (
 	"time"
 )
 
+type LogLevel int
+
+const (
+	DEBUG LogLevel = iota
+	INFO
+	WARNING
+	ERROR
+)
+
 // Logger object
 type Logger struct {
-	out  io.Writer
-	file *os.File
-	log  *log.Logger
+	Level LogLevel
+	out   io.Writer
+	file  *os.File
+	log   *log.Logger
 }
 
 type logMessage struct {
 	Timestamp    string `json:"timestamp"`
 	Message      string `json:"message"`
+	Error        error  `json:"error,omitempty"`
 	FunctionName string `json:"functionname"`
 	FileName     string `json:"filename"`
 	FileLine     int    `json:"fileline"`
 }
 
 // NewLogger Constructor
-func NewLogger() (Logger, error) {
+func NewLogger() (*Logger, error) {
 	var file *os.File
 	var err error
 	var out io.Writer
+
 	file, err = os.OpenFile("bot.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println(err)
@@ -36,11 +48,13 @@ func NewLogger() (Logger, error) {
 	out = os.Stdout
 
 	l := &Logger{
-		out:  out,
-		file: file,
+		Level: DEBUG,
+		out:   out,
+		file:  file,
 	}
+
 	l.log = log.New(io.MultiWriter(out, file), "", 1)
-	return *l, nil
+	return l, nil
 }
 
 // logger error formatting function
