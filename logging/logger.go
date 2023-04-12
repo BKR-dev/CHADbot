@@ -28,6 +28,7 @@ type Logger struct {
 }
 
 type logMessage struct {
+	LogLevel     string `json:"loglevel"`
 	Timestamp    string `json:"timestamp"`
 	Message      string `json:"message"`
 	Error        error  `json:"error,omitempty"`
@@ -100,18 +101,13 @@ func (l *Logger) logf(level LogLevel, format string, err error, a ...any) {
 
 	// Create logMessage struct
 	logMsg := &logMessage{
+		LogLevel:     logLevelToString(level),
 		Timestamp:    timestamp,
 		Message:      msg,
 		Error:        err,
 		FunctionName: funcName,
 		FileName:     file,
 		FileLine:     line,
-	}
-	// function does not contain nil
-	if err != nil {
-		logMsg = &logMessage{timestamp, msg, err, funcName, file, line}
-	} else {
-		logMsg = &logMessage{timestamp, msg, nil, funcName, file, line}
 	}
 
 	// Marshal logMessage struct to JSON
@@ -129,6 +125,22 @@ func (l *Logger) logf(level LogLevel, format string, err error, a ...any) {
 		if _, err := fmt.Fprintln(l.file, logMsg); err != nil {
 			fmt.Println("Error writing to log file:", err)
 		}
+	}
+}
+
+// return loglevel string from leel
+func logLevelToString(level LogLevel) string {
+	switch level {
+	case DEBUG:
+		return "DEBUG"
+	case INFO:
+		return "INFO"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	default:
+		return "UNKNOWN"
 	}
 }
 
