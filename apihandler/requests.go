@@ -47,7 +47,7 @@ type LatestPost struct {
 	} `json:"post_stream"`
 }
 
-var Scribe logging.Logger
+var Scribe *logging.Logger
 
 // target thread, apiKey and User
 var topicId string

@@ -16,7 +16,7 @@ type RandomInsult struct {
 	insult bool // trigger for personal attack, randomly set
 }
 
-var scribe logging.Logger
+var scribe *logging.Logger
 
 func init() {
 	var err error

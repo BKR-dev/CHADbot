@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -59,24 +60,36 @@ func NewLogger() (*Logger, error) {
 
 // logger error formatting function
 func (l *Logger) Errorf(format string, err error, a ...any) {
-	l.logf(format, err, a...)
+	l.logf(ERROR, format, err, a...)
 }
 
 // logger error function
 func (l *Logger) Error(err error, a ...any) {
-	l.logf("", err, a...)
+	l.logf(ERROR, "", err, a...)
+}
+
+// logger warning formatting function
+func (l *Logger) Warningf(format string, err error, a ...any) {
+	l.logf(WARNING, format, err, a...)
+}
+
+// logger warning function
+func (l *Logger) Warning(format string, a ...any) {
+	l.logf(WARNING, format, nil, a...)
 }
 
 // logger info formatting function
 func (l *Logger) Infof(format string, a ...any) {
-	l.logf(format, nil, a...)
+	l.logf(INFO, format, nil, a...)
 }
 
-// TODO: add logg level for logger funcs
-// TODO: add log rotate
-// TODO: add formatting (json?)
 // logger function to log to stdout and to a file
-func (l *Logger) logf(format string, err error, a ...any) {
+func (l *Logger) logf(level LogLevel, format string, err error, a ...any) {
+
+	// checks if logLevel is not below specified LogLevel
+	if level < l.Level {
+		return
+	}
 
 	// Add log message to the logger as it would be printf
 	msg := fmt.Sprintf(format, a...)
@@ -85,27 +98,37 @@ func (l *Logger) logf(format string, err error, a ...any) {
 	funcName, file, line := getCaller()
 	timestamp := time.Now().Format("15:04:05.000")
 
+	// Create logMessage struct
+	logMsg := &logMessage{
+		Timestamp:    timestamp,
+		Message:      msg,
+		Error:        err,
+		FunctionName: funcName,
+		FileName:     file,
+		FileLine:     line,
+	}
 	// function does not contain nil
 	if err != nil {
-		// log message without error
-		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s in line: %d\n", timestamp, msg, funcName, file, line)
-		// to stdout
-		l.log.Println(logMsg)
-
-		// Log to file
-		if l.file != nil {
-			fmt.Fprintln(l.file, logMsg)
-		}
+		logMsg = &logMessage{timestamp, msg, err, funcName, file, line}
+	} else {
+		logMsg = &logMessage{timestamp, msg, nil, funcName, file, line}
 	}
 
-	// log message with error
-	logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
+	// Marshal logMessage struct to JSON
+	jsonLogMsg, err := json.Marshal(logMsg)
+	if err != nil {
+		fmt.Println("Error marshaling log message to JSON:", err)
+		return
+	}
+
 	// to stdout
-	l.log.Println(logMsg)
+	l.log.Println(string(jsonLogMsg))
 
 	// Log to file
 	if l.file != nil {
-		fmt.Fprintln(l.file, logMsg)
+		if _, err := fmt.Fprintln(l.file, logMsg); err != nil {
+			fmt.Println("Error writing to log file:", err)
+		}
 	}
 }
 
@@ -113,6 +136,7 @@ func (l *Logger) logf(format string, err error, a ...any) {
 func (l *Logger) Close() error {
 	if l.file != nil {
 		if err := l.file.Close(); err != nil {
+			fmt.Println("Error closing log file:", err)
 			return err
 		}
 	}
