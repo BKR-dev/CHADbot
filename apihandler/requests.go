@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
-	"io/ioutil"
 	"net/http"
 	"terminator-shitpost/logging"
 	"time"
@@ -57,6 +57,7 @@ var apiUserId int
 var url string
 var highestPost int
 
+// initializing vars
 func init() {
 	topicId = "1127"
 	apiKey = "0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da"
@@ -198,7 +199,7 @@ func GetRandomBibleVerse() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}

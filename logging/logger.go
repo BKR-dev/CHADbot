@@ -9,12 +9,14 @@ import (
 	"time"
 )
 
+// Logger object
 type Logger struct {
 	out  io.Writer
 	file *os.File
 	log  *log.Logger
 }
 
+// NewLogger Constructor
 func NewLogger() (Logger, error) {
 	var file *os.File
 	var err error
@@ -33,19 +35,25 @@ func NewLogger() (Logger, error) {
 	return *l, nil
 }
 
+// logger error formatting function
 func (l *Logger) Errorf(format string, err error, v ...interface{}) {
 	l.logf(format, err, v...)
 }
 
+// logger error function
 func (l *Logger) Error(err error, v ...interface{}) {
 	l.logf("", err, v...)
 }
 
-// TODO: add logg level for logger funcs
+// logger info formatting function
 func (l *Logger) Infof(format string, v ...interface{}) {
 	l.logf(format, nil, v...)
 }
 
+// TODO: add logg level for logger funcs
+// TODO: add log rotate
+// TODO: add formatting (json?)
+// logger function to log to stdout and to a file
 func (l *Logger) logf(format string, err error, v ...interface{}) {
 
 	if err != nil {
@@ -79,17 +87,17 @@ func (l *Logger) logf(format string, err error, v ...interface{}) {
 
 }
 
+// Logger Close
 func (l *Logger) Close() error {
-
 	if l.file != nil {
 		if err := l.file.Close(); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
+// returns function invocations information
 func getCaller() (string, string, int) {
 	pc, fileName, lineNumber, ok := runtime.Caller(3)
 	if !ok {
