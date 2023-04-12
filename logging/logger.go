@@ -16,6 +16,14 @@ type Logger struct {
 	log  *log.Logger
 }
 
+type logMessage struct {
+	Timestamp    string `json:"timestamp"`
+	Message      string `json:"message"`
+	FunctionName string `json:"functionname"`
+	FileName     string `json:"filename"`
+	FileLine     int    `json:"fileline"`
+}
+
 // NewLogger Constructor
 func NewLogger() (Logger, error) {
 	var file *os.File
@@ -37,17 +45,17 @@ func NewLogger() (Logger, error) {
 
 // logger error formatting function
 func (l *Logger) Errorf(format string, err error, a ...any) {
-	l.logf(format, err, v...)
+	l.logf(format, err, a...)
 }
 
 // logger error function
 func (l *Logger) Error(err error, a ...any) {
-	l.logf("", err, v...)
+	l.logf("", err, a...)
 }
 
 // logger info formatting function
 func (l *Logger) Infof(format string, a ...any) {
-	l.logf(format, nil, v...)
+	l.logf(format, nil, a...)
 }
 
 // TODO: add logg level for logger funcs
@@ -56,14 +64,18 @@ func (l *Logger) Infof(format string, a ...any) {
 // logger function to log to stdout and to a file
 func (l *Logger) logf(format string, err error, a ...any) {
 
-	if err != nil {
-		// Add log message to the logger as it would be printf
-		msg := fmt.Sprintf(format, v...)
+	// Add log message to the logger as it would be printf
+	msg := fmt.Sprintf(format, a...)
 
-		// Log to file
-		funcName, file, line := getCaller()
-		timestamp := time.Now().Format("15:04:05.000")
-		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
+	// Log to stdout
+	funcName, file, line := getCaller()
+	timestamp := time.Now().Format("15:04:05.000")
+
+	// function does not contain nil
+	if err != nil {
+		// log message without error
+		logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s in line: %d\n", timestamp, msg, funcName, file, line)
+		// to stdout
 		l.log.Println(logMsg)
 
 		// Log to file
@@ -71,13 +83,10 @@ func (l *Logger) logf(format string, err error, a ...any) {
 			fmt.Fprintln(l.file, logMsg)
 		}
 	}
-	// Add log message to the logger as it would be printf
-	msg := fmt.Sprintf(format, v...)
 
-	// Log to stdout
-	funcName, file, line := getCaller()
-	timestamp := time.Now().Format("15:04:05.000")
-	logMsg := fmt.Sprintf("%s: \nMessage: [%s]  \n%s \n%s in line: %d\n", timestamp, msg, funcName, file, line)
+	// log message with error
+	logMsg := fmt.Sprintf("%s: \nMessage: [%s] \n%s \n%s \n%s in line: %d\n", timestamp, err, msg, funcName, file, line)
+	// to stdout
 	l.log.Println(logMsg)
 
 	// Log to file
