@@ -7,6 +7,9 @@ import (
 	"time"
 )
 
+// TODO: add config file for credentials
+// TODO: att a frontend for user interaction (start / stop / last logg / add insults)
+// TODO: add go routines just for the heck of it
 func main() {
 
 	scribe, err := scribe.NewLogger()
