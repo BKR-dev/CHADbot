@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 )
 
 var configName = "settings.conf"
@@ -35,6 +36,21 @@ func readFile() ([]string, error) {
 	return stringSlice, nil
 }
 
+// remove spaces from string but return it
+func removeSpaces(str string) string {
+	// byte sloice size string
+	b := make([]byte, 0, len(str))
+	// go through string check if rune is space
+	for _, c := range str {
+		if !unicode.IsSpace(c) {
+			// push to byte slice cast to byte
+			b = append(b, byte(c))
+		}
+	}
+	// return cast to string
+	return string(b)
+}
+
 func GetSettings() (map[string]string, error) {
 	fileLines, err := readFile()
 	if err != nil {
@@ -42,12 +58,15 @@ func GetSettings() (map[string]string, error) {
 	}
 	// make a map sized the number of lines (1 var / line)
 	varMap := make(map[string]string, len(fileLines))
-
+	// go thorugh the lines
 	for _, v := range fileLines {
-		fmt.Println(v)
+		// cut on the comment delimiter
 		keyVal := strings.Split(v, "=")
+		for i, w := range keyVal {
+			// remove spaces
+			keyVal[i] = removeSpaces(w)
+		}
 		varMap[keyVal[0]] = keyVal[1]
 	}
-
 	return varMap, nil
 }
