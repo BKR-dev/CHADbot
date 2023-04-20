@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	"net/http"
+	"terminator-shitpost/conf"
 	"terminator-shitpost/logging"
 	"time"
 )
@@ -47,9 +49,9 @@ type LatestPost struct {
 	} `json:"post_stream"`
 }
 
-var Scribe *logging.Logger
+var scribe *logging.Logger
 
-// target thread, apiKey and User
+// input needed from config file
 var topicId string
 var apiKey string
 var apiUser string
@@ -59,23 +61,22 @@ var highestPost int
 
 // initializing vars
 func init() {
-	topicId = "1127"
-	apiKey = "0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da"
-	apiUser = "CHADbot"
-	apiUserId = 101
-	url = "https://forum.pixelspace.xyz/t/"
-	highestPost = 1
-
-	// 101
-	// 0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da
-	// CHADbot
-	// burying feds innawoods after making them sleep with akimbo 1911 because their vegan or  keto weirdo gaming fags who love anime and slurp ramen all day
-
-	var err error
-	Scribe, err = logging.NewLogger()
+	scribe, err := logging.NewLogger()
 	if err != nil {
 		fmt.Println("Error creating logger in responses.go")
 	}
+	settings, err := conf.GetSettings()
+	if err != nil {
+		scribe.Errorf("error reading config file", err)
+	}
+
+	topicId = settings["topicId"]
+	apiKey = settings["apiKey"]
+	apiUser = settings["apiUser"]
+	apiUserId, _ = strconv.Atoi(settings["apiUserId"])
+	url = settings["url"]
+	highestPost = 1
+
 }
 
 // gets the topic object and returns the latest post number from it
@@ -96,7 +97,7 @@ func getPostsFromTopic() (int, error) {
 	}
 
 	if err != nil {
-		Scribe.Infof("Request Status: %v", res.StatusCode)
+		scribe.Infof("Request Status: %v", res.StatusCode)
 		return 0, err
 	}
 
@@ -139,7 +140,7 @@ func GetLastPost() (LatestPost, int, error) {
 	}
 
 	if err != nil {
-		Scribe.Infof("Request Status: %v", res.StatusCode)
+		scribe.Infof("Request Status: %v", res.StatusCode)
 		return LatestPost{}, apiUserId, err
 	}
 
@@ -151,7 +152,7 @@ func GetLastPost() (LatestPost, int, error) {
 	if err != nil {
 		return LatestPost{}, apiUserId, err
 	}
-	Scribe.Infof("Got last post, quick 1 second sleep")
+	scribe.Infof("Got last post, quick 1 second sleep")
 	time.Sleep(1 * time.Second)
 	return lastPost, apiUserId, nil
 }

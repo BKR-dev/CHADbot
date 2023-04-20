@@ -47,7 +47,7 @@ func removeSpaces(str string) string {
 			b = append(b, byte(c))
 		}
 	}
-	// return cast to string
+	// return cast to string from byte sloice
 	return string(b)
 }
 

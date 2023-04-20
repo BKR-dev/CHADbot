@@ -1,9 +1,7 @@
 package main
 
 import (
-	"os"
 	api "terminator-shitpost/apihandler"
-	conf "terminator-shitpost/conf"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
 	"time"
@@ -18,14 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	defer scribe.Close()
-
-	_, err = conf.GetSettings()
-	if err != nil {
-		scribe.Errorf("error reading config file", err)
-	}
-	os.Exit(0)
 
 	var response string
 	var highestPostNumber int
