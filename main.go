@@ -2,6 +2,7 @@ package main
 
 import (
 	api "terminator-shitpost/apihandler"
+	conf "terminator-shitpost/conf"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
 	"time"
@@ -16,6 +17,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	conf.GetSettings()
 
 	var response string
 	var highestPostNumber int
