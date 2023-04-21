@@ -27,6 +27,7 @@ func main() {
 		responses, botUserId, err := api.GetLastPost()
 		if err != nil {
 			scribe.Errorf("Error getting responses from Topic: ", err)
+			return
 		}
 
 		highestPostNumber = responses.HighestPostNumber

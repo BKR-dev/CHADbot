@@ -12,6 +12,7 @@ import (
 	"terminator-shitpost/conf"
 	"terminator-shitpost/logging"
 	"time"
+	"unicode"
 )
 
 // TopicResponse
@@ -90,11 +91,14 @@ func getPostsFromTopic() (int, error) {
 		return 0, fmt.Errorf("Error creating request: %v", err)
 	}
 	// good to know: if the request cannot be created req.Header.Set returns a SIGSEGV
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Api-Key", apiKey)
-	req.Header.Set("Api-User", apiUser)
+	req.Header.Set("Api-Username", apiUser)
 
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
+		fmt.Println(reqUrl)
+		fmt.Println(req.Header)
 		return 0, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
 
@@ -137,6 +141,7 @@ func GetLastPost() (LatestPost, int, error) {
 
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
+		scribe.Warning("the request in question: %v", req)
 		return LatestPost{}, apiUserId,
 			errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
@@ -211,11 +216,23 @@ func GetRandomBibleVerse() (string, error) {
 	return string(body), nil
 }
 
+// creates satinized url free from qoutation marks
 func createUrlString(url string, topicId string) string {
 	jst := ".json"
+	t := "/t/"
 	var sb strings.Builder
+	var newUrl string
 	sb.WriteString(url)
+	sb.WriteString(t)
 	sb.WriteString(topicId)
 	sb.Write([]byte(jst))
-	return sb.String()
+	oldUrl := sb.String()
+	sb.Reset()
+	for _, r := range oldUrl {
+		if !unicode.Is(unicode.Quotation_Mark, r) {
+			sb.WriteRune(r)
+		}
+	}
+	newUrl = sb.String()
+	return newUrl
 }
