@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
-
 	"net/http"
+	"strconv"
+	"strings"
 	"terminator-shitpost/conf"
 	"terminator-shitpost/logging"
 	"time"
@@ -51,6 +51,8 @@ type LatestPost struct {
 
 var scribe *logging.Logger
 
+// var settings *conf.Config
+
 // input needed from config file
 var topicId string
 var apiKey string
@@ -65,31 +67,31 @@ func init() {
 	if err != nil {
 		fmt.Println("Error creating logger in responses.go")
 	}
-	settings, err := conf.GetSettings()
-	if err != nil {
-		scribe.Errorf("error reading config file", err)
-	}
-
-	topicId = settings["topicId"]
-	apiKey = settings["apiKey"]
-	apiUser = settings["apiUser"]
-	apiUserId, _ = strconv.Atoi(settings["apiUserId"])
-	url = settings["url"]
-	highestPost = 1
-
+	scribe.Infof("Lets go")
 }
 
 // gets the topic object and returns the latest post number from it
 func getPostsFromTopic() (int, error) {
-
+	settings, err := conf.GetSettings()
+	if err != nil {
+		scribe.Errorf("Could not obtain config", err)
+	}
+	// fmt.Println(settings)
+	topicId = settings.TopicId
+	apiKey = settings.ApiKey
+	apiUser = settings.ApiUser
+	apiUserId, _ = strconv.Atoi(settings.ApiUserId)
+	url = settings.Url
+	highestPost = 1
+	reqUrl := createUrlString(url, topicId)
 	client := http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest("GET", url+topicId+".json", nil)
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return 0, fmt.Errorf("Error creating request: %v", err)
+	}
+	// good to know: if the request cannot be created req.Header.Set returns a SIGSEGV
 	req.Header.Set("Api-Key", apiKey)
 	req.Header.Set("Api-User", apiUser)
-
-	if err != nil {
-		return 0, err
-	}
 
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
@@ -207,4 +209,13 @@ func GetRandomBibleVerse() (string, error) {
 	defer res.Body.Close()
 
 	return string(body), nil
+}
+
+func createUrlString(url string, topicId string) string {
+	jst := ".json"
+	var sb strings.Builder
+	sb.WriteString(url)
+	sb.WriteString(topicId)
+	sb.Write([]byte(jst))
+	return sb.String()
 }

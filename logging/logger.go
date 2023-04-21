@@ -177,7 +177,6 @@ func (l *Logger) Close() error {
 
 // returns function invocations information
 func getCaller() (string, string, int) {
-
 	pc, fileName, lineNumber, ok := runtime.Caller(3)
 	if !ok {
 		return "unknown", "", 0

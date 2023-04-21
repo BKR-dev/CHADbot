@@ -8,8 +8,9 @@ import (
 )
 
 // TODO: add config file for credentials
-// TODO: att a frontend for user interaction (start / stop / last logg / add insults)
+// TODO: add a frontend for user interaction (start / stop / last logg / add insults)
 // TODO: add go routines just for the heck of it
+// TODO: add cli flags for prettier log messages and debug logging and what not
 func main() {
 
 	scribe, err := scribe.NewLogger()

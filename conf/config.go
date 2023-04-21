@@ -3,6 +3,7 @@ package conf
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"unicode"
@@ -10,8 +11,23 @@ import (
 
 var configName = "settings.conf"
 
+// config struct
+type Config struct {
+	TopicId   string `json:"topicId"`
+	ApiKey    string `json:"apiKey"`
+	ApiUser   string `json:"apiUser"`
+	ApiUserId string `json:"apiUserId"`
+	Url       string `json:"url"`
+}
+
+// reads from file "settings.conf"
 func readFile() ([]string, error) {
-	content, err := os.ReadFile(configName)
+	file, err := os.Open(configName)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	content, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +67,8 @@ func removeSpaces(str string) string {
 	return string(b)
 }
 
-func GetSettings() (map[string]string, error) {
+// Returns all entries in the config file
+func GetSettings() (*Config, error) {
 	fileLines, err := readFile()
 	if err != nil {
 		return nil, err
@@ -68,5 +85,13 @@ func GetSettings() (map[string]string, error) {
 		}
 		varMap[keyVal[0]] = keyVal[1]
 	}
-	return varMap, nil
+	config := Config{
+		TopicId:   varMap["topicId"],
+		ApiKey:    varMap["apiKey"],
+		ApiUser:   varMap["apiUser"],
+		ApiUserId: varMap["apiUserId"],
+		Url:       varMap["url"],
+	}
+
+	return &config, nil
 }
