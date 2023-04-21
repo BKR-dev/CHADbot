@@ -94,11 +94,11 @@ func getPostsFromTopic() (int, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Api-Key", apiKey)
 	req.Header.Set("Api-Username", apiUser)
-
+	fmt.Printf("\nthe request in question: %v\n", req)
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
-		fmt.Println(reqUrl)
-		fmt.Println(req.Header)
+		fmt.Printf("\nthe request in question: %v\n", req)
+		fmt.Printf("\nthe response in question: %v\n", res)
 		return 0, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
 
@@ -141,7 +141,6 @@ func GetLastPost() (LatestPost, int, error) {
 
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
-		scribe.Warning("the request in question: %v", req)
 		return LatestPost{}, apiUserId,
 			errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
