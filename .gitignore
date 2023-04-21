@@ -2,3 +2,4 @@
 terminator-shitpost
 *.log
 *.conf
+.vscode
