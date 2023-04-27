@@ -6,16 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 
-	"golang.org/x/net/http2"
-
 	"strconv"
-	"strings"
 	"terminator-shitpost/conf"
 	"terminator-shitpost/logging"
 	"time"
-	"unicode"
 )
 
 // TopicResponse
@@ -87,11 +84,12 @@ func getPostsFromTopic() (int, error) {
 	apiUserId, _ = strconv.Atoi(settings.ApiUserId)
 	url = settings.Url
 	highestPost = 1
-	reqUrl := createUrlString(url, topicId)
-	client := &http.Client{
-		Transport: &http2.Transport{},
-		Timeout:   3 * time.Second,
+	reqUrl := url + topicId + ".json"
+	client := http.Client{
+		Timeout: 3 * time.Second,
 	}
+
+	fmt.Println(reqUrl)
 
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
@@ -106,6 +104,7 @@ func getPostsFromTopic() (int, error) {
 	res, err := client.Do(req)
 	fmt.Printf("HTTP version of Response: %d.%d\n", res.ProtoMajor, res.ProtoMinor)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
+		fmt.Println(err)
 		return 0, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
 
@@ -137,7 +136,8 @@ func GetLastPost() (LatestPost, int, error) {
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest("GET", url+topicId+"/"+fmt.Sprint(postNumber)+".json", nil)
+	fullUrl := url + topicId + "/" + strconv.Itoa(postNumber) + ".json"
+	req, err := http.NewRequest("GET", fullUrl, nil)
 	req.Header.Set("Api-Key", apiKey)
 	req.Header.Set("Api-User", apiUser)
 
@@ -156,15 +156,15 @@ func GetLastPost() (LatestPost, int, error) {
 		return LatestPost{}, apiUserId, err
 	}
 
-	defer res.Body.Close()
-
 	var lastPost LatestPost
-
-	err = json.NewDecoder(res.Body).Decode(&lastPost)
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return LatestPost{}, apiUserId, err
+		fmt.Println(err)
 	}
-	scribe.Infof("Got last post, quick 1 second sleep")
+	if err := json.Unmarshal(body, &lastPost); err != nil {
+		fmt.Println(err)
+	}
+	res.Body.Close()
 	time.Sleep(1 * time.Second)
 	return lastPost, apiUserId, nil
 }
@@ -223,21 +223,6 @@ func GetRandomBibleVerse() (string, error) {
 
 // creates satinized url free from qoutation marks
 func createUrlString(url string, topicId string) string {
-	jst := ".json"
-	t := "/t/"
-	var sb strings.Builder
-	var newUrl string
-	sb.WriteString(url)
-	sb.WriteString(t)
-	sb.WriteString(topicId)
-	sb.Write([]byte(jst))
-	oldUrl := sb.String()
-	sb.Reset()
-	for _, r := range oldUrl {
-		if !unicode.Is(unicode.Quotation_Mark, r) {
-			sb.WriteRune(r)
-		}
-	}
-	newUrl = sb.String()
+	newUrl := url + topicId + ".json"
 	return newUrl
 }

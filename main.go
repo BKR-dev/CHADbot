@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	api "terminator-shitpost/apihandler"
 	scribe "terminator-shitpost/logging"
 	answer "terminator-shitpost/responses"
@@ -26,7 +27,7 @@ func main() {
 	for {
 		responses, botUserId, err := api.GetLastPost()
 		if err != nil {
-			scribe.Errorf("Error getting responses from Topic: ", err)
+			fmt.Println(err)
 			return
 		}
 
@@ -72,4 +73,5 @@ func main() {
 		scribe.Infof("Sleeping for 5 seconds")
 		time.Sleep(5 * time.Second)
 	}
+
 }
