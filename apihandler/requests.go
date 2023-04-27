@@ -90,8 +90,9 @@ func getPostsFromTopic() (int, error) {
 	reqUrl := createUrlString(url, topicId)
 	client := &http.Client{
 		Transport: &http2.Transport{},
-		Timeout:   5 * time.Second,
+		Timeout:   3 * time.Second,
 	}
+
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		return 0, fmt.Errorf("Error creating request: %v", err)
@@ -101,11 +102,10 @@ func getPostsFromTopic() (int, error) {
 	req.Header.Set("Api-Key", apiKey)
 	req.Header.Set("Api-Username", apiUser)
 
-	fmt.Printf("\nthe request in question: %v\n", req)
+	fmt.Printf("HTTP version of Request: %d.%d\n", req.ProtoMajor, req.ProtoMinor)
 	res, err := client.Do(req)
+	fmt.Printf("HTTP version of Response: %d.%d\n", res.ProtoMajor, res.ProtoMinor)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
-		fmt.Printf("\nthe request in question: %v\n", req)
-		fmt.Printf("\nthe response in question: %v\n", res)
 		return 0, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
 
@@ -123,7 +123,6 @@ func getPostsFromTopic() (int, error) {
 		return 0, err
 	}
 	highestPost = topicResponse.HighestPostNumber
-	// time.Sleep(3 * time.Second)
 	return highestPost, nil
 }
 
