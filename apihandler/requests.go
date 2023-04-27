@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"golang.org/x/net/http2"
+
 	"strconv"
 	"strings"
 	"terminator-shitpost/conf"
@@ -85,7 +88,10 @@ func getPostsFromTopic() (int, error) {
 	url = settings.Url
 	highestPost = 1
 	reqUrl := createUrlString(url, topicId)
-	client := http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{
+		Transport: &http2.Transport{},
+		Timeout:   5 * time.Second,
+	}
 	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
 		return 0, fmt.Errorf("Error creating request: %v", err)
@@ -94,6 +100,7 @@ func getPostsFromTopic() (int, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Api-Key", apiKey)
 	req.Header.Set("Api-Username", apiUser)
+
 	fmt.Printf("\nthe request in question: %v\n", req)
 	res, err := client.Do(req)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
