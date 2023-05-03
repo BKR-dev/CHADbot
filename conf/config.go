@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -69,22 +70,19 @@ func removeSpaces(str string) string {
 
 // Returns all entries in the config file
 func GetSettings() (*Config, error) {
-	fileLines, err := readFile()
+	fileLines, err := os.ReadFile("settings.conf")
 	if err != nil {
 		return nil, err
 	}
 	// make a map sized the number of lines (1 var / line)
 	varMap := make(map[string]string, len(fileLines))
-	// go thorugh the lines
-	for _, v := range fileLines {
-		// cut on the comment delimiter
-		keyVal := strings.Split(v, "=")
-		for i, w := range keyVal {
-			// remove spaces
-			keyVal[i] = removeSpaces(w)
-		}
+	reader := strings.NewReader(string(fileLines))
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		keyVal := strings.Split(scanner.Text(), "=")
 		varMap[keyVal[0]] = keyVal[1]
 	}
+	// go thorugh the lines
 	config := Config{
 		TopicId:   varMap["topicId"],
 		ApiKey:    varMap["apiKey"],
