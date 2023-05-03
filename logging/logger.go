@@ -27,14 +27,24 @@ type Logger struct {
 	log   *log.Logger
 }
 
+// logMessage object
 type logMessage struct {
-	LogLevel     string `json:"loglevel"`
-	Timestamp    string `json:"timestamp"`
-	Message      string `json:"message"`
-	Error        error  `json:"error,omitempty"`
-	FunctionName string `json:"functionname"`
-	FileName     string `json:"filename"`
-	FileLine     int    `json:"fileline"`
+	LogLevel     string       `json:"loglevel"`
+	Timestamp    string       `json:"timestamp"`
+	Message      string       `json:"message"`
+	Error        *CustomError `json:"error,omitempty"`
+	FunctionName string       `json:"functionname"`
+	FileName     string       `json:"filename"`
+	FileLine     int          `json:"fileline"`
+}
+
+type CustomError struct {
+	Message string      `json:"message"`
+	JSONObj interface{} `json:"jsonobj,omitempty"`
+}
+
+func (cE CustomError) Error() string {
+	return cE.Message
 }
 
 // NewLogger Constructor
@@ -43,10 +53,11 @@ func NewLogger() (*Logger, error) {
 	var err error
 	var out io.Writer
 
-	file, err = os.OpenFile("bot.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err = os.OpenFile("bot.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
-		fmt.Println(err)
+		return nil, fmt.Errorf("failed to open log file: %v", err)
 	}
+
 	out = os.Stdout
 
 	l := &Logger{
@@ -60,36 +71,45 @@ func NewLogger() (*Logger, error) {
 }
 
 // logger error formatting function
-func (l *Logger) Errorf(format string, err error, a ...any) {
+func (l *Logger) Errorf(format string, err error, a ...interface{}) {
 	l.logf(ERROR, format, err, a...)
 }
 
 // logger error function
-func (l *Logger) Error(err error, a ...any) {
+func (l *Logger) Error(err error, a ...interface{}) {
 	l.logf(ERROR, "", err, a...)
 }
 
 // logger warning formatting function
-func (l *Logger) Warningf(format string, err error, a ...any) {
+func (l *Logger) Warningf(format string, err error, a ...interface{}) {
 	l.logf(WARNING, format, err, a...)
 }
 
 // logger warning function
-func (l *Logger) Warning(format string, a ...any) {
+func (l *Logger) Warning(format string, a ...interface{}) {
 	l.logf(WARNING, format, nil, a...)
 }
 
 // logger info formatting function
-func (l *Logger) Infof(format string, a ...any) {
+func (l *Logger) Infof(format string, a ...interface{}) {
 	l.logf(INFO, format, nil, a...)
 }
 
 // logger function to log to stdout and to a file
-func (l *Logger) logf(level LogLevel, format string, err error, a ...any) {
+func (l *Logger) logf(level LogLevel, format string, err error, a ...interface{}) {
 
 	// checks if logLevel is not below specified LogLevel
 	if level < l.Level {
 		return
+	}
+	var customErr *CustomError
+	if ce, ok := err.(CustomError); ok {
+		customErr = &ce
+	} else if err != nil {
+		customErr = &CustomError{
+			Message: err.Error(),
+			JSONObj: nil,
+		}
 	}
 
 	// Add log message to the logger as it would be printf
@@ -104,7 +124,7 @@ func (l *Logger) logf(level LogLevel, format string, err error, a ...any) {
 		LogLevel:     logLevelToString(level),
 		Timestamp:    timestamp,
 		Message:      msg,
-		Error:        err,
+		Error:        customErr,
 		FunctionName: funcName,
 		FileName:     file,
 		FileLine:     line,
@@ -157,7 +177,6 @@ func (l *Logger) Close() error {
 
 // returns function invocations information
 func getCaller() (string, string, int) {
-
 	pc, fileName, lineNumber, ok := runtime.Caller(3)
 	if !ok {
 		return "unknown", "", 0

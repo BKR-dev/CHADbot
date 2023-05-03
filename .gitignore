@@ -1,3 +1,5 @@
 *.swp
 terminator-shitpost
 *.log
+*.conf
+.vscode

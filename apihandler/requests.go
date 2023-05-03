@@ -6,10 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-
 	"net/http"
+
+	"golang.org/x/net/http2"
+
+	"strconv"
+	"strings"
+	"terminator-shitpost/conf"
 	"terminator-shitpost/logging"
 	"time"
+	"unicode"
 )
 
 // TopicResponse
@@ -47,9 +53,11 @@ type LatestPost struct {
 	} `json:"post_stream"`
 }
 
-var Scribe *logging.Logger
+var scribe *logging.Logger
 
-// target thread, apiKey and User
+// var settings *conf.Config
+
+// input needed from config file
 var topicId string
 var apiKey string
 var apiUser string
@@ -59,44 +67,50 @@ var highestPost int
 
 // initializing vars
 func init() {
-	topicId = "1127"
-	apiKey = "0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da"
-	apiUser = "CHADbot"
-	apiUserId = 101
-	url = "https://forum.pixelspace.xyz/t/"
-	highestPost = 1
-
-	// 101
-	// 0e0f0211b74c488045ffde571cb152ffdc65a96f4078535b632f7f05fc5c27da
-	// CHADbot
-	// burying feds innawoods after making them sleep with akimbo 1911 because their vegan or  keto weirdo gaming fags who love anime and slurp ramen all day
-
-	var err error
-	Scribe, err = logging.NewLogger()
+	scribe, err := logging.NewLogger()
 	if err != nil {
 		fmt.Println("Error creating logger in responses.go")
 	}
+	scribe.Infof("Lets go")
 }
 
 // gets the topic object and returns the latest post number from it
 func getPostsFromTopic() (int, error) {
-
-	client := http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest("GET", url+topicId+".json", nil)
-	req.Header.Set("Api-Key", apiKey)
-	req.Header.Set("Api-User", apiUser)
-
+	settings, err := conf.GetSettings()
 	if err != nil {
-		return 0, err
+		scribe.Errorf("Could not obtain config", err)
+	}
+	// fmt.Println(settings)
+	topicId = settings.TopicId
+	apiKey = settings.ApiKey
+	apiUser = settings.ApiUser
+	apiUserId, _ = strconv.Atoi(settings.ApiUserId)
+	url = settings.Url
+	highestPost = 1
+	reqUrl := createUrlString(url, topicId)
+	client := &http.Client{
+		Transport: &http2.Transport{},
+		Timeout:   3 * time.Second,
 	}
 
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return 0, fmt.Errorf("Error creating request: %v", err)
+	}
+	// good to know: if the request cannot be created req.Header.Set returns a SIGSEGV
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Api-Key", apiKey)
+	req.Header.Set("Api-Username", apiUser)
+
+	fmt.Printf("HTTP version of Request: %d.%d\n", req.ProtoMajor, req.ProtoMinor)
 	res, err := client.Do(req)
+	fmt.Printf("HTTP version of Response: %d.%d\n", res.ProtoMajor, res.ProtoMinor)
 	if !(res.StatusCode >= 200 && res.StatusCode <= 204) {
 		return 0, errors.New("httpStatusCode is worrysome: " + fmt.Sprint(res.StatusCode))
 	}
 
 	if err != nil {
-		Scribe.Infof("Request Status: %v", res.StatusCode)
+		scribe.Infof("Request Status: %v", res.StatusCode)
 		return 0, err
 	}
 
@@ -109,7 +123,6 @@ func getPostsFromTopic() (int, error) {
 		return 0, err
 	}
 	highestPost = topicResponse.HighestPostNumber
-	// time.Sleep(3 * time.Second)
 	return highestPost, nil
 }
 
@@ -139,7 +152,7 @@ func GetLastPost() (LatestPost, int, error) {
 	}
 
 	if err != nil {
-		Scribe.Infof("Request Status: %v", res.StatusCode)
+		scribe.Infof("Request Status: %v", res.StatusCode)
 		return LatestPost{}, apiUserId, err
 	}
 
@@ -151,7 +164,7 @@ func GetLastPost() (LatestPost, int, error) {
 	if err != nil {
 		return LatestPost{}, apiUserId, err
 	}
-	Scribe.Infof("Got last post, quick 1 second sleep")
+	scribe.Infof("Got last post, quick 1 second sleep")
 	time.Sleep(1 * time.Second)
 	return lastPost, apiUserId, nil
 }
@@ -206,4 +219,25 @@ func GetRandomBibleVerse() (string, error) {
 	defer res.Body.Close()
 
 	return string(body), nil
+}
+
+// creates satinized url free from qoutation marks
+func createUrlString(url string, topicId string) string {
+	jst := ".json"
+	t := "/t/"
+	var sb strings.Builder
+	var newUrl string
+	sb.WriteString(url)
+	sb.WriteString(t)
+	sb.WriteString(topicId)
+	sb.Write([]byte(jst))
+	oldUrl := sb.String()
+	sb.Reset()
+	for _, r := range oldUrl {
+		if !unicode.Is(unicode.Quotation_Mark, r) {
+			sb.WriteRune(r)
+		}
+	}
+	newUrl = sb.String()
+	return newUrl
 }
