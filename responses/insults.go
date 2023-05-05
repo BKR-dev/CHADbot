@@ -24,12 +24,8 @@ func ProvideResponsesAndInsults() ([]InsultingResponse, Insults, []string) {
 		personalAttack: []string{ // add your inselt here
 			"you sodding tiktak",
 			"absolute muppet",
-			"complete retard",
-			"cum guzzling lunatic",
 			"beyond meat enjoyer",
-			"incel cuck",
 			"vegan soy brainlet",
-			"just shut the fuck up fag",
 			"bubble tea enjoyer",
 			"first grade degenerate"},
 		personalTitleAttack: []string{
@@ -55,8 +51,7 @@ func ProvideResponsesAndInsults() ([]InsultingResponse, Insults, []string) {
 		responses: []string{
 			"forever alone in the woods",
 			"pissing in jars to keep some company",
-			"getting buttfucked by the local wendingo",
-			"starving in the cold is better than buying starbucks soy caramel faggoccino"},
+		},
 	}
 
 	nineteen11 := InsultingResponse{
@@ -71,7 +66,7 @@ func ProvideResponsesAndInsults() ([]InsultingResponse, Insults, []string) {
 		topic:    "shill",
 		keywords: []string{"shill", "crypto", "bitcoin", "etherium", "NFT"},
 		responses: []string{
-			"Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account :chris_party:",
+			"Thanks to Coinbase resiliency and UFC NFTs, crypto is now linked directly to my Wells Fargo account",
 			"My NFT ETF i just shorted got me the platinum AMEX so i get paid for spending money i dont have :think_about_it:",
 			"bro invest in my hyper value adding NFT web4.2 finTech renewable ecommerce gaming startup, bro"},
 	}
@@ -80,8 +75,8 @@ func ProvideResponsesAndInsults() ([]InsultingResponse, Insults, []string) {
 		topic:    "diet",
 		keywords: []string{"vegan", "keto"},
 		responses: []string{
-			"just eat some real food and stop being a cunt",
-			"stop pretending you are not being brainwashed by some cucked incels to buy their supplements"},
+			"just eat some real food and stop being a dingus",
+			"stop pretending you are not being brainwashed by some influencer to buy their supplements"},
 	}
 
 	opSys := InsultingResponse{
